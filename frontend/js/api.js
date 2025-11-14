@@ -58,19 +58,6 @@ class APIClient {
         });
     }
 
-    // Email client
-    async listFolders() {
-        return this.request('/email/folders');
-    }
-
-    async getMessages(folder = 'INBOX', limit = 50) {
-        return this.request(`/email/messages?folder=${encodeURIComponent(folder)}&limit=${limit}`);
-    }
-
-    async getMessage(msgId, folder = 'INBOX') {
-        return this.request(`/email/message/${msgId}?folder=${encodeURIComponent(folder)}`);
-    }
-
     // Email sending
     async sendPhishing(count, recipients, templateType = 'warning') {
         return this.request('/send/phishing', {

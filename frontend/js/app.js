@@ -2,10 +2,6 @@
  * Main application logic for Email Data Generation.
  */
 
-// Global state
-let currentFolder = 'INBOX';
-let currentMessage = null;
-
 // Initialize application
 document.addEventListener('DOMContentLoaded', () => {
     const path = window.location.pathname;
@@ -14,8 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initDashboard();
     } else if (path === '/config' || path === '/config.html') {
         initConfig();
-    } else if (path === '/email' || path === '/email.html') {
-        initEmailClient();
     }
 });
 
@@ -26,6 +20,24 @@ async function initDashboard() {
     await loadHistory();
     await loadDefaultRecipients();
     setupSendButtons();
+    setupEmailSendModal();
+}
+
+function setupEmailSendModal() {
+    // Email send modal close handlers
+    document.getElementById('emailSendModalClose')?.addEventListener('click', () => {
+        document.getElementById('emailSendModal').classList.add('hidden');
+    });
+    
+    document.getElementById('closeEmailSendModalBtn')?.addEventListener('click', () => {
+        document.getElementById('emailSendModal').classList.add('hidden');
+    });
+    
+    document.getElementById('emailSendModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'emailSendModal') {
+            document.getElementById('emailSendModal').classList.add('hidden');
+        }
+    });
 }
 
 async function loadDefaultRecipients() {
@@ -74,8 +86,30 @@ function showSendDialog(type) {
 
 async function sendEmails(type, count, recipients) {
     const statusDiv = document.getElementById('sendStatus');
+    const modal = document.getElementById('emailSendModal');
+    const modalTitle = document.getElementById('emailSendModalTitle');
+    const modalStatus = document.getElementById('emailSendStatus');
+    const modalConnectionInfo = document.getElementById('emailSendConnectionInfo');
+    const modalConnectionDetails = document.getElementById('emailSendConnectionDetails');
+    const modalActions = document.getElementById('emailSendActions');
+    
+    // Update modal title based on type
+    const typeNames = {
+        'phishing': 'Phishing',
+        'eicar': 'EICAR',
+        'cynic': 'Cynic'
+    };
+    modalTitle.textContent = `${typeNames[type] || type.toUpperCase()} Email Send Results`;
+    
+    // Show status in dashboard
     statusDiv.innerHTML = '<div class="alert alert-info">Sending emails...</div>';
     statusDiv.classList.remove('hidden');
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    modalStatus.innerHTML = '<p class="loading">Sending emails...</p>';
+    modalConnectionInfo.classList.add('hidden');
+    modalActions.classList.add('hidden');
     
     try {
         let result;
@@ -87,21 +121,91 @@ async function sendEmails(type, count, recipients) {
             result = await api.sendCynic(count, recipients);
         }
         
+        // Build connection details text
+        let connectionText = '';
+        if (result.connection_info) {
+            const connInfo = result.connection_info;
+            connectionText = `IMAP Connection:
+Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.imap_use_ssl ? 'SSL' : connInfo.imap_use_starttls ? 'STARTTLS' : 'None'}
+
+SMTP Connection:
+Server: ${connInfo.smtp_server || 'N/A'}:${connInfo.smtp_port || 587}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.use_ssl ? 'SSL' : connInfo.use_tls ? 'TLS' : 'None'}
+
+Email Details:
+Type: ${typeNames[type] || type}
+Total: ${result.total || count}
+Sent: ${result.sent || 0}
+Failed: ${result.failed || 0}`;
+            
+            // Add success or error details
+            if (result.success && result.connection_details) {
+                connectionText += `\n\n${result.connection_details}`;
+            } else if (result.error_details) {
+                connectionText += `\n\n${result.error_details}`;
+            } else if (result.connection_attempt) {
+                const attempt = result.connection_attempt;
+                connectionText += `\n\nConnection Attempt:
+Server: ${attempt.attempted_server || 'N/A'}
+Username: ${attempt.attempted_username || 'N/A'}
+Encryption: ${attempt.attempted_encryption || 'N/A'}
+Method: ${attempt.connection_method || 'N/A'}`;
+            }
+        }
+        
         if (result.success) {
+            // Success
             statusDiv.innerHTML = `<div class="alert alert-success">
                 Successfully sent ${result.sent} email(s)!
             </div>`;
+            
+            modalStatus.innerHTML = `<div class="alert alert-success">
+                <strong>Success!</strong> Successfully sent ${result.sent} email(s)!
+            </div>`;
+            
+            if (connectionText) {
+                modalConnectionDetails.innerHTML = `
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6;">${connectionText}</pre>
+                `;
+                modalConnectionInfo.classList.remove('hidden');
+            }
+            
+            modalActions.classList.remove('hidden');
             await loadHistory();
         } else {
+            // Partial or complete failure
             statusDiv.innerHTML = `<div class="alert alert-error">
                 Failed to send some emails. Sent: ${result.sent}, Failed: ${result.failed}
                 ${result.errors ? '<br>Errors: ' + result.errors.join(', ') : ''}
             </div>`;
+            
+            modalStatus.innerHTML = `<div class="alert alert-error">
+                <strong>Error:</strong> Failed to send some emails. Sent: ${result.sent || 0}, Failed: ${result.failed || 0}
+                ${result.errors && result.errors.length > 0 ? '<br><br>Errors:<br>' + result.errors.slice(0, 5).join('<br>') : ''}
+            </div>`;
+            
+            if (connectionText) {
+                modalConnectionDetails.innerHTML = `
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6; color: #d32f2f;">${connectionText}</pre>
+                `;
+                modalConnectionInfo.classList.remove('hidden');
+            }
+            
+            modalActions.classList.remove('hidden');
         }
     } catch (error) {
         statusDiv.innerHTML = `<div class="alert alert-error">
             Error: ${error.message}
         </div>`;
+        
+        modalStatus.innerHTML = `<div class="alert alert-error">
+            <strong>Error:</strong> ${error.message}
+        </div>`;
+        
+        modalActions.classList.remove('hidden');
     }
 }
 
@@ -705,124 +809,4 @@ function showAlert(message, type) {
     setTimeout(() => alertDiv.remove(), 5000);
 }
 
-// Email client functions
-async function initEmailClient() {
-    await loadFolders();
-    setupEmailClient();
-}
-
-function setupEmailClient() {
-    document.getElementById('refreshBtn')?.addEventListener('click', () => {
-        loadMessages(currentFolder);
-    });
-}
-
-async function loadFolders() {
-    try {
-        const data = await api.listFolders();
-        const folderList = document.getElementById('folderList');
-        
-        if (!data.folders || data.folders.length === 0) {
-            folderList.innerHTML = '<li class="folder-item">No folders found</li>';
-            return;
-        }
-        
-        let html = '';
-        data.folders.forEach(folder => {
-            const active = folder === currentFolder ? 'active' : '';
-            html += `<li class="folder-item ${active}" data-folder="${folder}">${folder}</li>`;
-        });
-        
-        folderList.innerHTML = html;
-        
-        // Add click handlers
-        folderList.querySelectorAll('.folder-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const folder = item.dataset.folder;
-                currentFolder = folder;
-                loadFolders(); // Refresh to update active state
-                loadMessages(folder);
-            });
-        });
-        
-        // Load messages for current folder
-        loadMessages(currentFolder);
-    } catch (error) {
-        console.error('Failed to load folders:', error);
-        document.getElementById('folderList').innerHTML = 
-            '<li class="folder-item">Failed to load folders</li>';
-    }
-}
-
-async function loadMessages(folder) {
-    try {
-        const data = await api.getMessages(folder, 50);
-        const messageList = document.getElementById('messageList');
-        
-        if (!data.messages || data.messages.length === 0) {
-            messageList.innerHTML = '<li class="email-item">No messages</li>';
-            return;
-        }
-        
-        let html = '';
-        data.messages.forEach(msg => {
-            html += `<li class="email-item" data-msg-id="${msg.id}">
-                <div class="email-header">
-                    <span class="email-subject">${msg.subject || '(No subject)'}</span>
-                    <span class="email-date">${msg.date ? new Date(msg.date).toLocaleString() : ''}</span>
-                </div>
-                <div class="email-from">From: ${msg.from || 'Unknown'}</div>
-            </li>`;
-        });
-        
-        messageList.innerHTML = html;
-        
-        // Add click handlers
-        messageList.querySelectorAll('.email-item').forEach(item => {
-            item.addEventListener('click', () => {
-                const msgId = item.dataset.msgId;
-                loadMessage(folder, msgId);
-                
-                // Update selected state
-                messageList.querySelectorAll('.email-item').forEach(i => i.classList.remove('selected'));
-                item.classList.add('selected');
-            });
-        });
-    } catch (error) {
-        console.error('Failed to load messages:', error);
-        document.getElementById('messageList').innerHTML = 
-            '<li class="email-item">Failed to load messages</li>';
-    }
-}
-
-async function loadMessage(folder, msgId) {
-    try {
-        const message = await api.getMessage(msgId, folder);
-        const viewer = document.getElementById('messageViewer');
-        
-        if (!message) {
-            viewer.innerHTML = '<div class="alert alert-error">Message not found</div>';
-            return;
-        }
-        
-        let html = `<div class="email-viewer">
-            <div class="email-viewer-header">
-                <h3>${message.subject || '(No subject)'}</h3>
-                <p><strong>From:</strong> ${message.from || 'Unknown'}</p>
-                <p><strong>To:</strong> ${message.to || 'Unknown'}</p>
-                <p><strong>Date:</strong> ${message.date ? new Date(message.date).toLocaleString() : 'Unknown'}</p>
-                ${message.attachments && message.attachments.length > 0 ? 
-                    `<p><strong>Attachments:</strong> ${message.attachments.map(a => a.filename).join(', ')}</p>` : ''}
-            </div>
-            <div class="email-viewer-body">${message.body || '(No body)'}</div>
-        </div>`;
-        
-        viewer.innerHTML = html;
-        currentMessage = message;
-    } catch (error) {
-        console.error('Failed to load message:', error);
-        document.getElementById('messageViewer').innerHTML = 
-            '<div class="alert alert-error">Failed to load message</div>';
-    }
-}
 

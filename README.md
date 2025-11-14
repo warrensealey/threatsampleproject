@@ -1,93 +1,102 @@
 # Email Data Generation Project
 
-Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, and Cynic test emails) through Symantec Email Security Cloud via SMTP, with a web-based configuration interface and email client functionality.
+Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, and Cynic test emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
-## Project Overview
+## Features
 
-This project provides:
+- **Multi-Provider Support**: GMX, Gmail, Yahoo, iCloud, Zoho, Outlook.com, AOL, Office365
 - **Test Email Generation**: Create and send phishing, EICAR, and Cynic test emails
-- **SMTP Integration**: Send emails through Symantec Email Security Cloud
-- **Email Client**: Connect to web-based email accounts (IMAP) for reading emails
+- **SMTP Integration**: Send emails through configured SMTP servers
 - **Web Interface**: Full configuration and management through HTML/JavaScript frontend
+- **Connection Details**: Detailed connection information for troubleshooting
+- **Email History**: Track all sent emails with timestamps and status
 
-## Project Structure
-
-See [PROJECT_PLAN.md](PROJECT_PLAN.md) for detailed implementation plan.
-
-## Development Server References
-
-- **SSH Access**: `wsealey@192.168.1.177`
-- **PhishTank Automation**: `~/phishtank-automation`
-- **Cynic Test**: `~/cynictest`
-- **Mutt Config**: `~/.muttrc`
-
-## Getting Started
+## Quick Start
 
 ### Installation
 
-1. Clone the repository:
 ```bash
+# Clone the repository
 git clone https://github.com/warrensealey/threatsampleproject.git
 cd threatsampleproject
-```
 
-2. Install dependencies:
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Run the application
+./start.sh
 ```
 
-3. Ensure you have the `7z` command-line tool installed (for Cynic test email generation):
-   - macOS: `brew install p7zip`
-   - Linux: `sudo apt-get install p7zip-full` or `sudo yum install p7zip`
-   - Windows: Download from https://www.7-zip.org/
+Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions.
+
+### Access the Application
+
+- **Dashboard**: http://localhost:5000
+- **Configuration**: http://localhost:5000/config
+
+## Documentation
+
+- **[INSTALLATION.md](INSTALLATION.md)** - Detailed installation and setup guide
+- **[DOCUMENTATION.md](DOCUMENTATION.md)** - Complete API reference and usage documentation
+- **[PROJECT_PLAN.md](PROJECT_PLAN.md)** - Implementation plan and architecture details
+
+## Supported Email Providers
+
+> **Note**: GMX server settings are known to work and have been tested. All other hosted mail provider settings are still in development and may require additional configuration or troubleshooting.
+
+| Provider | IMAP | SMTP | Port | Encryption |
+|----------|------|------|------|------------|
+| GMX | imap.gmx.com | mail.gmx.com | 587 | TLS |
+| Gmail | imap.gmail.com | smtp.gmail.com | 587 | TLS |
+| Yahoo | imap.mail.yahoo.com | smtp.mail.yahoo.com | 587 | TLS |
+| iCloud | imap.mail.me.com | smtp.mail.me.com | 587 | TLS |
+| Zoho | imap.zoho.com | smtp.zoho.com | 587 | TLS |
+| Outlook.com | imap-mail.outlook.com | smtp-mail.outlook.com | 587 | TLS |
+| Office365 | outlook.office365.com | smtp.office365.com | 587 | TLS |
+| AOL | imap.aol.com | smtp.aol.com | 465 | SSL |
+
+## Usage
+
+### Sending Test Emails
+
+1. Navigate to the Dashboard
+2. Select the type of test email:
+   - **Phishing Emails**: Test emails with PhishTank URLs
+   - **EICAR Test Emails**: Standard antivirus test files
+   - **Cynic Test Emails**: Password-protected VBS archives
+3. Enter recipient addresses and count
+4. Review connection details in the results modal
 
 ### Configuration
 
-1. Start the application:
-```bash
-python backend/app.py
+1. Go to the Configuration page
+2. Select your email provider from the dropdown
+3. Enter your email credentials
+4. Test the configuration using the "Test Email Configuration" button
+
+## Project Structure
+
+```
+threatsampleproject/
+├── backend/          # Python Flask backend
+│   ├── api/          # REST API routes
+│   ├── generators/   # Email generators
+│   └── *.py         # Core modules
+├── frontend/         # Web frontend
+│   ├── *.html       # Pages
+│   ├── css/         # Stylesheets
+│   └── js/          # JavaScript
+├── data/            # Configuration (auto-created)
+└── requirements.txt # Dependencies
 ```
 
-2. Open your browser and navigate to:
-   - Dashboard: http://localhost:5000
-   - Configuration: http://localhost:5000/config
-   - Email Client: http://localhost:5000/email
+## Requirements
 
-3. Configure the application:
-   - Go to the Configuration page
-   - Enter your SMTP settings (Symantec Email Security Cloud)
-   - Enter your email client settings (IMAP for reading emails)
-   - Set default email generation parameters
-
-### Usage
-
-#### Sending Test Emails
-
-1. Go to the Dashboard
-2. Click on the type of test email you want to send:
-   - **Phishing Emails**: Generates emails with PhishTank URLs
-   - **EICAR Test Emails**: Sends EICAR test file attachments
-   - **Cynic Test Emails**: Sends password-protected VBS archives
-3. Enter the number of emails and recipient addresses when prompted
-
-#### Reading Emails
-
-1. Go to the Email Client page
-2. Ensure your email client is configured in the Configuration page
-3. Select a folder from the left panel
-4. Click on messages to view them in the right panel
-
-### Project Structure
-
-The project follows the structure defined in [PROJECT_PLAN.md](PROJECT_PLAN.md):
-- `backend/` - Python backend application
-- `frontend/` - HTML/JavaScript frontend
-- `data/` - Configuration and log files (created automatically)
-- `templates/` - Email templates (for future use)
+- Python 3.8+
+- Flask 3.0.0
+- 7z command-line tool (optional, for Cynic emails)
 
 ## Contributing
-
-To push code to this repository:
 
 ```bash
 git add .

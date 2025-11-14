@@ -8,7 +8,6 @@ from backend.config import (
     update_email_generation_config, get_history
 )
 from backend.email_generator import EmailGenerator
-from backend.email_client import EmailClient
 import logging
 
 logger = logging.getLogger(__name__)
@@ -79,50 +78,6 @@ def update_email_client_config_route():
         return jsonify({"success": True})
     except Exception as e:
         logger.error(f"Error updating email client config: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@api.route('/email/folders', methods=['GET'])
-def list_folders():
-    """List email folders."""
-    try:
-        with EmailClient() as client:
-            folders = client.list_folders()
-            return jsonify({"folders": folders})
-    except Exception as e:
-        logger.error(f"Error listing folders: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@api.route('/email/messages', methods=['GET'])
-def get_messages():
-    """Get messages from a folder."""
-    try:
-        folder = request.args.get('folder', 'INBOX')
-        limit = int(request.args.get('limit', 50))
-        
-        with EmailClient() as client:
-            messages = client.get_messages(folder, limit)
-            return jsonify({"messages": messages})
-    except Exception as e:
-        logger.error(f"Error getting messages: {e}")
-        return jsonify({"error": str(e)}), 500
-
-
-@api.route('/email/message/<msg_id>', methods=['GET'])
-def get_message(msg_id):
-    """Get a specific message."""
-    try:
-        folder = request.args.get('folder', 'INBOX')
-        
-        with EmailClient() as client:
-            message = client.get_message(folder, msg_id)
-            if message:
-                return jsonify(message)
-            else:
-                return jsonify({"error": "Message not found"}), 404
-    except Exception as e:
-        logger.error(f"Error getting message: {e}")
         return jsonify({"error": str(e)}), 500
 
 

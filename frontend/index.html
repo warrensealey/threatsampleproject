@@ -12,7 +12,6 @@
         <nav>
             <a href="/" class="active">Dashboard</a>
             <a href="/config">Configuration</a>
-            <a href="/email">Email Client</a>
         </nav>
     </header>
 
@@ -43,6 +42,24 @@
             <h2>Email History</h2>
             <div id="history">
                 <p class="loading">Loading history...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Send Result Modal -->
+    <div id="emailSendModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="modal-close" id="emailSendModalClose">&times;</span>
+            <h2 id="emailSendModalTitle">Email Send Results</h2>
+            <div id="emailSendStatus">
+                <p class="loading">Processing...</p>
+            </div>
+            <div id="emailSendConnectionInfo" class="hidden">
+                <h3>Connection Information</h3>
+                <div id="emailSendConnectionDetails"></div>
+            </div>
+            <div id="emailSendActions" class="hidden">
+                <button class="btn btn-primary" id="closeEmailSendModalBtn">Close</button>
             </div>
         </div>
     </div>

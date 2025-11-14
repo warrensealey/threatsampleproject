@@ -35,12 +35,6 @@ def config():
     return send_from_directory(app.static_folder, 'config.html')
 
 
-@app.route('/email')
-def email():
-    """Serve email client page."""
-    return send_from_directory(app.static_folder, 'email.html')
-
-
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
 

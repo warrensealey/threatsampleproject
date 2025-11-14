@@ -134,47 +134,145 @@ class EmailGenerator:
                 smtp_config["server"] = "smtp.zoho.com"
                 smtp_config["port"] = 587
         
+        # Build connection info and connection attempt details
+        connection_info = {
+            "smtp_server": smtp_config["server"],
+            "smtp_port": smtp_config["port"],
+            "username": smtp_config["username"],
+            "use_tls": smtp_config["use_tls"],
+            "use_ssl": smtp_config["use_ssl"],
+            "imap_server": email_client_config.get("imap_server", ""),
+            "imap_port": email_client_config.get("imap_port", 993),
+            "imap_use_ssl": email_client_config.get("use_ssl", True),
+            "imap_use_starttls": email_client_config.get("use_starttls", False)
+        }
+        
+        connection_attempt = {
+            "attempted_server": f"{smtp_config['server']}:{smtp_config['port']}",
+            "attempted_username": smtp_config.get("username", ""),
+            "attempted_encryption": "SSL" if smtp_config.get("use_ssl") else ("TLS" if smtp_config.get("use_tls") else "None"),
+            "connection_method": "SMTP_SSL" if smtp_config.get("use_ssl") else "SMTP with STARTTLS" if smtp_config.get("use_tls") else "SMTP (no encryption)"
+        }
+        
         sent_count = 0
         failed_count = 0
         errors = []
+        connection_error = None
         
-        with SMTPClient(smtp_config) as smtp:
-            for email_data in emails:
-                try:
-                    attachments = email_data.get("attachments", [])
-                    success = smtp.send_email(
-                        to_addresses=email_data["recipients"],
-                        subject=email_data["subject"],
-                        body=email_data["body"],
-                        attachments=attachments if attachments else None
-                    )
+        try:
+            smtp_client = SMTPClient(smtp_config)
+            with smtp_client as smtp:
+                if not smtp.connected:
+                    connection_error = smtp.last_error or "Failed to establish connection to SMTP server"
+                    error_details = f"""Connection Attempt Failed:
+Server: {connection_attempt['attempted_server']}
+Username: {connection_attempt['attempted_username'] or 'N/A'}
+Encryption: {connection_attempt['attempted_encryption']}
+Method: {connection_attempt['connection_method']}
+
+Error: {connection_error}
+
+Possible Causes:
+- Incorrect server address or port
+- Network connectivity issues
+- Firewall blocking the connection
+- SSL/TLS configuration mismatch
+- Authentication credentials are invalid
+- Server is down or unreachable"""
                     
-                    if success:
-                        sent_count += 1
-                        # Add to history
-                        add_history_entry({
-                            "type": email_type,
-                            "subject": email_data["subject"],
-                            "recipients": email_data["recipients"],
-                            "timestamp": self._get_timestamp(),
-                            "status": "sent"
-                        })
-                    else:
+                    return {
+                        "success": False,
+                        "sent": 0,
+                        "failed": len(emails),
+                        "total": len(emails),
+                        "errors": [connection_error],
+                        "connection_info": connection_info,
+                        "connection_attempt": connection_attempt,
+                        "error_details": error_details
+                    }
+                
+                for email_data in emails:
+                    try:
+                        attachments = email_data.get("attachments", [])
+                        success = smtp.send_email(
+                            to_addresses=email_data["recipients"],
+                            subject=email_data["subject"],
+                            body=email_data["body"],
+                            attachments=attachments if attachments else None
+                        )
+                        
+                        if success:
+                            sent_count += 1
+                            # Add to history
+                            add_history_entry({
+                                "type": email_type,
+                                "subject": email_data["subject"],
+                                "recipients": email_data["recipients"],
+                                "timestamp": self._get_timestamp(),
+                                "status": "sent"
+                            })
+                        else:
+                            failed_count += 1
+                            errors.append(f"Failed to send: {email_data['subject']}")
+                    except Exception as e:
                         failed_count += 1
-                        errors.append(f"Failed to send: {email_data['subject']}")
-                except Exception as e:
-                    failed_count += 1
-                    error_msg = f"Error sending {email_data.get('subject', 'email')}: {str(e)}"
-                    errors.append(error_msg)
-                    logger.error(error_msg)
+                        error_msg = f"Error sending {email_data.get('subject', 'email')}: {str(e)}"
+                        errors.append(error_msg)
+                        logger.error(error_msg)
         
-        return {
+        except Exception as e:
+            error_msg = str(e)
+            error_details = f"""Connection Attempt Failed:
+Server: {connection_attempt['attempted_server']}
+Username: {connection_attempt['attempted_username'] or 'N/A'}
+Encryption: {connection_attempt['attempted_encryption']}
+Method: {connection_attempt['connection_method']}
+
+Error Details:
+{error_msg}
+
+Possible Causes:
+- Incorrect server address, port, or encryption settings
+- Authentication credentials are invalid
+- Network connectivity issues
+- Firewall or security software blocking the connection
+- SSL/TLS certificate validation failure
+- Server is down or unreachable"""
+            
+            logger.error(f"Error sending {email_type} emails: {e}")
+            return {
+                "success": False,
+                "sent": sent_count,
+                "failed": len(emails) - sent_count,
+                "total": len(emails),
+                "errors": [error_msg] + errors[:9],
+                "connection_info": connection_info,
+                "connection_attempt": connection_attempt,
+                "error_details": error_details
+            }
+        
+        # Build result with connection info
+        result = {
             "success": failed_count == 0,
             "sent": sent_count,
             "failed": failed_count,
             "total": len(emails),
-            "errors": errors[:10]  # Limit errors to first 10
+            "errors": errors[:10],  # Limit errors to first 10
+            "connection_info": connection_info,
+            "connection_attempt": connection_attempt
         }
+        
+        # Add success details if all emails sent successfully
+        if result["success"]:
+            result["connection_details"] = f"""Connection Successful:
+Server: {connection_attempt['attempted_server']}
+Username: {connection_attempt['attempted_username'] or 'N/A'}
+Encryption: {connection_attempt['attempted_encryption']}
+Method: {connection_attempt['connection_method']}
+
+Successfully sent {sent_count} email(s) of type: {email_type}"""
+        
+        return result
     
     def _get_timestamp(self):
         """Get current timestamp as ISO string."""
