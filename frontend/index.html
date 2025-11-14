@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Data Generation - Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Email Data Generation</h1>
+        <nav>
+            <a href="/" class="active">Dashboard</a>
+            <a href="/config">Configuration</a>
+            <a href="/email">Email Client</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>Send Test Emails</h2>
+            <div class="grid">
+                <div>
+                    <h3>Phishing Emails</h3>
+                    <p>Generate and send phishing test emails based on PhishTank data.</p>
+                    <button class="btn btn-primary" id="sendPhishingBtn">Send Phishing Emails</button>
+                </div>
+                <div>
+                    <h3>EICAR Test Emails</h3>
+                    <p>Send EICAR test file attachments for antivirus testing.</p>
+                    <button class="btn btn-success" id="sendEicarBtn">Send EICAR Emails</button>
+                </div>
+                <div>
+                    <h3>Cynic Test Emails</h3>
+                    <p>Send Cynic test emails with password-protected VBS archives.</p>
+                    <button class="btn btn-danger" id="sendCynicBtn">Send Cynic Emails</button>
+                </div>
+            </div>
+            <div id="sendStatus" class="hidden"></div>
+        </div>
+
+        <div class="card">
+            <h2>Email History</h2>
+            <div id="history">
+                <p class="loading">Loading history...</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
+

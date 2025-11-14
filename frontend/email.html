@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Data Generation - Email Client</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .email-client-container {
+            display: grid;
+            grid-template-columns: 250px 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 200px);
+        }
+        .folder-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .message-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .viewer-panel {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Email Data Generation</h1>
+        <nav>
+            <a href="/">Dashboard</a>
+            <a href="/config">Configuration</a>
+            <a href="/email" class="active">Email Client</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>Email Client</h2>
+            <div style="margin-bottom: 15px;">
+                <button class="btn btn-secondary" id="refreshBtn">Refresh</button>
+            </div>
+            <div class="email-client-container">
+                <div class="folder-panel">
+                    <h3>Folders</h3>
+                    <ul class="folder-list" id="folderList">
+                        <li class="folder-item">Loading folders...</li>
+                    </ul>
+                </div>
+                <div class="message-panel">
+                    <h3>Messages</h3>
+                    <ul class="email-list" id="messageList">
+                        <li class="email-item">Select a folder to view messages</li>
+                    </ul>
+                </div>
+                <div class="viewer-panel">
+                    <h3>Message</h3>
+                    <div id="messageViewer">
+                        <p class="loading">Select a message to view</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
+

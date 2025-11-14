@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Data Generation - Configuration</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header>
+        <h1>Email Data Generation</h1>
+        <nav>
+            <a href="/">Dashboard</a>
+            <a href="/config" class="active">Configuration</a>
+            <a href="/email">Email Client</a>
+        </nav>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <h2>Email Client Configuration</h2>
+            <p>Configure IMAP settings for reading emails and SMTP settings for sending emails from your web-based email account.</p>
+            <div class="form-group">
+                <label for="emailProvider">Email Provider:</label>
+                <select id="emailProvider" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <option value="">-- Select Provider --</option>
+                    <option value="aol">AOL</option>
+                    <option value="gmail">Gmail</option>
+                    <option value="msoutlook">MS Outlook</option>
+                    <option value="gmx" selected>GMX</option>
+                </select>
+            </div>
+            <form id="emailClientForm">
+                <div class="form-group">
+                    <label for="imapServer">IMAP Server:</label>
+                    <input type="text" id="imapServer" required>
+                </div>
+                <div class="form-group">
+                    <label for="imapPort">Port:</label>
+                    <input type="number" id="imapPort" value="993" required>
+                </div>
+                <div class="form-group">
+                    <label for="imapUsername">Username:</label>
+                    <input type="text" id="imapUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="imapPassword">Password:</label>
+                    <input type="password" id="imapPassword" required>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="imapUseSSL" checked>
+                        Use SSL
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="imapUseSTARTTLS">
+                        Use STARTTLS
+                    </label>
+                </div>
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #ddd;">
+                <h3 style="margin-bottom: 15px;">SMTP Settings (for sending emails)</h3>
+                <div class="form-group">
+                    <label for="smtpServer">SMTP Server:</label>
+                    <input type="text" id="smtpServer">
+                </div>
+                <div class="form-group">
+                    <label for="smtpPort">SMTP Port:</label>
+                    <input type="number" id="smtpPort" value="587">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="smtpUseTLS" checked>
+                        Use TLS
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="smtpUseSSL">
+                        Use SSL
+                    </label>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Save Email Client Configuration</button>
+                    <button type="button" class="btn btn-success" id="testEmailBtn">Test Email Configuration</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Test Email Modal -->
+        <div id="testEmailModal" class="modal hidden">
+            <div class="modal-content">
+                <span class="modal-close">&times;</span>
+                <h2>Test Email Configuration</h2>
+                <div id="testEmailStatus">
+                    <p class="loading">Testing email configuration...</p>
+                </div>
+                <div id="testEmailConnectionInfo" class="hidden">
+                    <h3>Connection Information</h3>
+                    <div id="connectionDetails"></div>
+                </div>
+                <div id="testEmailActions" class="hidden">
+                    <button class="btn btn-primary" id="confirmReceiptBtn">I Received the Email</button>
+                    <button class="btn btn-secondary" id="cancelTestBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Mutt Installation Status</h2>
+            <p>Check if mutt is installed and install it if needed.</p>
+            <div id="muttStatus">
+                <p class="loading">Checking mutt installation...</p>
+            </div>
+            <div id="muttActions" class="hidden">
+                <button class="btn btn-primary" id="installMuttBtn">Install Mutt</button>
+                <button class="btn btn-secondary" id="refreshMuttStatusBtn">Refresh Status</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Email Generation Configuration</h2>
+            <p>Configure default settings for email generation.</p>
+            <form id="emailGenForm">
+                <div class="form-group">
+                    <label for="defaultRecipients">Default Recipients (comma-separated):</label>
+                    <input type="text" id="defaultRecipients" placeholder="email1@example.com, email2@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="defaultCount">Default Count:</label>
+                    <input type="number" id="defaultCount" value="1" min="1">
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Save Email Generation Configuration</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>
+
