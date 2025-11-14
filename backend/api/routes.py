@@ -382,8 +382,20 @@ def test_email_config():
                 smtp_config["server"] = "smtp.aol.com"
                 smtp_config["port"] = 465
                 smtp_config["use_ssl"] = True
-            elif "office365.com" in imap_server or "outlook.com" in imap_server:
+            elif "office365.com" in imap_server:
                 smtp_config["server"] = "smtp.office365.com"
+                smtp_config["port"] = 587
+            elif "outlook.com" in imap_server or "imap-mail.outlook.com" in imap_server:
+                smtp_config["server"] = "smtp-mail.outlook.com"
+                smtp_config["port"] = 587
+            elif "yahoo.com" in imap_server:
+                smtp_config["server"] = "smtp.mail.yahoo.com"
+                smtp_config["port"] = 587
+            elif "mail.me.com" in imap_server:
+                smtp_config["server"] = "smtp.mail.me.com"
+                smtp_config["port"] = 587
+            elif "zoho.com" in imap_server:
+                smtp_config["server"] = "smtp.zoho.com"
                 smtp_config["port"] = 587
         
         connection_info = {
@@ -392,7 +404,11 @@ def test_email_config():
             "username": smtp_config["username"],
             "use_tls": smtp_config["use_tls"],
             "use_ssl": smtp_config["use_ssl"],
-            "recipient": recipient
+            "recipient": recipient,
+            "imap_server": email_client_config.get("imap_server", ""),
+            "imap_port": email_client_config.get("imap_port", 993),
+            "imap_use_ssl": email_client_config.get("use_ssl", True),
+            "imap_use_starttls": email_client_config.get("use_starttls", False)
         }
         
         # Test connection and send email

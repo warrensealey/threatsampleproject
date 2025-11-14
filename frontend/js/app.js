@@ -184,6 +184,54 @@ const emailProviderConfigs = {
         use_starttls: false,
         smtp_use_tls: true,
         smtp_use_ssl: false
+    },
+    yahoo: {
+        imap_server: 'imap.mail.yahoo.com',
+        imap_port: 993,
+        smtp_server: 'smtp.mail.yahoo.com',
+        smtp_port: 587,
+        username: '',
+        password: '',
+        use_ssl: true,
+        use_starttls: false,
+        smtp_use_tls: true,
+        smtp_use_ssl: false
+    },
+    icloud: {
+        imap_server: 'imap.mail.me.com',
+        imap_port: 993,
+        smtp_server: 'smtp.mail.me.com',
+        smtp_port: 587,
+        username: '',
+        password: '',
+        use_ssl: true,
+        use_starttls: false,
+        smtp_use_tls: true,
+        smtp_use_ssl: false
+    },
+    zoho: {
+        imap_server: 'imap.zoho.com',
+        imap_port: 993,
+        smtp_server: 'smtp.zoho.com',
+        smtp_port: 587,
+        username: '',
+        password: '',
+        use_ssl: true,
+        use_starttls: false,
+        smtp_use_tls: true,
+        smtp_use_ssl: false
+    },
+    outlookcom: {
+        imap_server: 'imap-mail.outlook.com',
+        imap_port: 993,
+        smtp_server: 'smtp-mail.outlook.com',
+        smtp_port: 587,
+        username: '',
+        password: '',
+        use_ssl: true,
+        use_starttls: false,
+        smtp_use_tls: true,
+        smtp_use_ssl: false
     }
 };
 
@@ -555,13 +603,22 @@ async function testEmailConfiguration() {
             
             // Show connection information
             const connInfo = result.connection_info;
+            const connectionText = `IMAP Connection:
+Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.imap_use_ssl ? 'SSL' : connInfo.imap_use_starttls ? 'STARTTLS' : 'None'}
+
+SMTP Connection:
+Server: ${connInfo.smtp_server || 'N/A'}:${connInfo.smtp_port || 587}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.use_ssl ? 'SSL' : connInfo.use_tls ? 'TLS' : 'None'}
+
+Test Email Details:
+Recipient: ${connInfo.recipient || 'N/A'}
+Subject: ${result.subject || 'N/A'}`;
+            
             document.getElementById('connectionDetails').innerHTML = `
-                <p><strong>SMTP Server:</strong> ${connInfo.smtp_server}:${connInfo.smtp_port}</p>
-                <p><strong>Username:</strong> ${connInfo.username}</p>
-                <p><strong>Recipient:</strong> ${connInfo.recipient}</p>
-                <p><strong>SSL:</strong> ${connInfo.use_ssl ? 'Yes' : 'No'}</p>
-                <p><strong>TLS:</strong> ${connInfo.use_tls ? 'Yes' : 'No'}</p>
-                <p><strong>Subject:</strong> ${result.subject || 'N/A'}</p>
+                <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6;">${connectionText}</pre>
             `;
             document.getElementById('testEmailConnectionInfo').classList.remove('hidden');
             
@@ -577,12 +634,21 @@ async function testEmailConfiguration() {
             // Show connection information even on error
             if (result.connection_info) {
                 const connInfo = result.connection_info;
+                const connectionText = `IMAP Connection:
+Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.imap_use_ssl ? 'SSL' : connInfo.imap_use_starttls ? 'STARTTLS' : 'None'}
+
+SMTP Connection:
+Server: ${connInfo.smtp_server || 'N/A'}:${connInfo.smtp_port || 587}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.use_ssl ? 'SSL' : connInfo.use_tls ? 'TLS' : 'None'}
+
+Test Email Details:
+Recipient: ${connInfo.recipient || 'N/A'}`;
+                
                 document.getElementById('connectionDetails').innerHTML = `
-                    <p><strong>SMTP Server:</strong> ${connInfo.smtp_server}:${connInfo.smtp_port}</p>
-                    <p><strong>Username:</strong> ${connInfo.username}</p>
-                    <p><strong>Recipient:</strong> ${connInfo.recipient}</p>
-                    <p><strong>SSL:</strong> ${connInfo.use_ssl ? 'Yes' : 'No'}</p>
-                    <p><strong>TLS:</strong> ${connInfo.use_tls ? 'Yes' : 'No'}</p>
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6;">${connectionText}</pre>
                 `;
                 document.getElementById('testEmailConnectionInfo').classList.remove('hidden');
             }

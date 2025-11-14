@@ -118,8 +118,20 @@ class EmailGenerator:
                 smtp_config["server"] = "smtp.aol.com"
                 smtp_config["port"] = 465
                 smtp_config["use_ssl"] = True
-            elif "office365.com" in imap_server or "outlook.com" in imap_server:
+            elif "office365.com" in imap_server:
                 smtp_config["server"] = "smtp.office365.com"
+                smtp_config["port"] = 587
+            elif "outlook.com" in imap_server or "imap-mail.outlook.com" in imap_server:
+                smtp_config["server"] = "smtp-mail.outlook.com"
+                smtp_config["port"] = 587
+            elif "yahoo.com" in imap_server:
+                smtp_config["server"] = "smtp.mail.yahoo.com"
+                smtp_config["port"] = 587
+            elif "mail.me.com" in imap_server:
+                smtp_config["server"] = "smtp.mail.me.com"
+                smtp_config["port"] = 587
+            elif "zoho.com" in imap_server:
+                smtp_config["server"] = "smtp.zoho.com"
                 smtp_config["port"] = 587
         
         sent_count = 0
