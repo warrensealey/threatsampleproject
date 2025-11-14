@@ -425,13 +425,41 @@ Test Details:
 
 Please confirm receipt of this email."""
         
+        # Build connection attempt details
+        connection_attempt = {
+            "attempted_server": f"{smtp_config['server']}:{smtp_config['port']}",
+            "attempted_username": smtp_config.get("username", ""),
+            "attempted_encryption": "SSL" if smtp_config.get("use_ssl") else ("TLS" if smtp_config.get("use_tls") else "None"),
+            "connection_method": "SMTP_SSL" if smtp_config.get("use_ssl") else "SMTP with STARTTLS" if smtp_config.get("use_tls") else "SMTP (no encryption)"
+        }
+        
         try:
-            with SMTPClient(smtp_config) as smtp:
+            smtp_client = SMTPClient(smtp_config)
+            with smtp_client as smtp:
                 if not smtp.connected:
+                    error_msg = smtp.last_error or "Failed to establish connection to SMTP server"
+                    error_details = f"""Connection Attempt Failed:
+Server: {connection_attempt['attempted_server']}
+Username: {connection_attempt['attempted_username'] or 'N/A'}
+Encryption: {connection_attempt['attempted_encryption']}
+Method: {connection_attempt['connection_method']}
+
+Error: {error_msg}
+
+Possible Causes:
+- Incorrect server address or port
+- Network connectivity issues
+- Firewall blocking the connection
+- SSL/TLS configuration mismatch
+- Authentication credentials are invalid
+- Server is down or unreachable"""
+                    
                     return jsonify({
                         "success": False,
-                        "error": "Failed to connect to SMTP server",
-                        "connection_info": connection_info
+                        "error": error_msg,
+                        "connection_info": connection_info,
+                        "connection_attempt": connection_attempt,
+                        "error_details": error_details
                     }), 500
                 
                 # Send test email
@@ -450,18 +478,52 @@ Please confirm receipt of this email."""
                         "subject": test_subject
                     })
                 else:
+                    error_details = f"""Connection Established But Send Failed:
+Server: {connection_attempt['attempted_server']}
+Username: {connection_attempt['attempted_username'] or 'N/A'}
+Encryption: {connection_attempt['attempted_encryption']}
+Method: {connection_attempt['connection_method']}
+
+Error: Successfully connected to SMTP server but failed to send email. This could be due to:
+- Authentication failure
+- Invalid recipient address
+- Server rejecting the email
+- Quota or rate limiting"""
+                    
                     return jsonify({
                         "success": False,
                         "error": "Failed to send test email",
-                        "connection_info": connection_info
+                        "connection_info": connection_info,
+                        "connection_attempt": connection_attempt,
+                        "error_details": error_details
                     }), 500
                     
         except Exception as e:
+            error_msg = str(e)
+            error_details = f"""Connection Attempt Failed:
+Server: {connection_attempt['attempted_server']}
+Username: {connection_attempt['attempted_username'] or 'N/A'}
+Encryption: {connection_attempt['attempted_encryption']}
+Method: {connection_attempt['connection_method']}
+
+Error Details:
+{error_msg}
+
+Possible Causes:
+- Incorrect server address, port, or encryption settings
+- Authentication credentials are invalid
+- Network connectivity issues
+- Firewall or security software blocking the connection
+- SSL/TLS certificate validation failure
+- Server is down or unreachable"""
+            
             logger.error(f"Error testing email config: {e}")
             return jsonify({
                 "success": False,
-                "error": str(e),
-                "connection_info": connection_info
+                "error": error_msg,
+                "connection_info": connection_info,
+                "connection_attempt": connection_attempt,
+                "error_details": error_details
             }), 500
             
     except Exception as e:

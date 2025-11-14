@@ -631,10 +631,10 @@ Subject: ${result.subject || 'N/A'}`;
                     <strong>Error:</strong> ${result.error || 'Failed to send test email'}
                 </div>`;
             
-            // Show connection information even on error
+            // Show connection information and connection attempt details on error
             if (result.connection_info) {
                 const connInfo = result.connection_info;
-                const connectionText = `IMAP Connection:
+                let connectionText = `IMAP Connection:
 Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
 Username: ${connInfo.username || 'N/A'}
 Encryption: ${connInfo.imap_use_ssl ? 'SSL' : connInfo.imap_use_starttls ? 'STARTTLS' : 'None'}
@@ -647,8 +647,20 @@ Encryption: ${connInfo.use_ssl ? 'SSL' : connInfo.use_tls ? 'TLS' : 'None'}
 Test Email Details:
 Recipient: ${connInfo.recipient || 'N/A'}`;
                 
+                // Add connection attempt details if available
+                if (result.error_details) {
+                    connectionText += `\n\n${result.error_details}`;
+                } else if (result.connection_attempt) {
+                    const attempt = result.connection_attempt;
+                    connectionText += `\n\nConnection Attempt:
+Server: ${attempt.attempted_server || 'N/A'}
+Username: ${attempt.attempted_username || 'N/A'}
+Encryption: ${attempt.attempted_encryption || 'N/A'}
+Method: ${attempt.connection_method || 'N/A'}`;
+                }
+                
                 document.getElementById('connectionDetails').innerHTML = `
-                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6;">${connectionText}</pre>
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6; color: #d32f2f;">${connectionText}</pre>
                 `;
                 document.getElementById('testEmailConnectionInfo').classList.remove('hidden');
             }
@@ -658,6 +670,27 @@ Recipient: ${connInfo.recipient || 'N/A'}`;
             `<div class="alert alert-error">
                 <strong>Error:</strong> ${error.message}
             </div>`;
+        
+        // Show error details if available
+        if (error.connection_attempt || error.error_details) {
+            let errorText = `Connection Error:\n${error.message || 'Unknown error'}`;
+            
+            if (error.error_details) {
+                errorText += `\n\n${error.error_details}`;
+            } else if (error.connection_attempt) {
+                const attempt = error.connection_attempt;
+                errorText += `\n\nConnection Attempt:
+Server: ${attempt.attempted_server || 'N/A'}
+Username: ${attempt.attempted_username || 'N/A'}
+Encryption: ${attempt.attempted_encryption || 'N/A'}
+Method: ${attempt.connection_method || 'N/A'}`;
+            }
+            
+            document.getElementById('connectionDetails').innerHTML = `
+                <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6; color: #d32f2f;">${errorText}</pre>
+            `;
+            document.getElementById('testEmailConnectionInfo').classList.remove('hidden');
+        }
     }
 }
 

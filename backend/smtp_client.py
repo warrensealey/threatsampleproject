@@ -24,6 +24,8 @@ class SMTPClient:
         self.smtp_config = smtp_config
         self.server = None
         self.connected = False
+        self.last_error = None
+        self.last_connection_attempt = None
     
     def connect(self):
         """Connect to SMTP server."""
@@ -35,6 +37,14 @@ class SMTPClient:
             
             if not server:
                 raise ValueError("SMTP server not configured")
+            
+            # Store connection details for error reporting
+            self.last_connection_attempt = {
+                "server": server,
+                "port": port,
+                "use_ssl": use_ssl,
+                "use_tls": use_tls
+            }
             
             if use_ssl:
                 self.server = smtplib.SMTP_SSL(server, port)
@@ -52,8 +62,22 @@ class SMTPClient:
             self.connected = True
             logger.info(f"Connected to SMTP server {server}:{port}")
             return True
+        except smtplib.SMTPAuthenticationError as e:
+            error_msg = f"Authentication failed: {str(e)}"
+            logger.error(f"Failed to connect to SMTP server: {error_msg}")
+            self.last_error = error_msg
+            self.connected = False
+            return False
+        except smtplib.SMTPConnectError as e:
+            error_msg = f"Connection failed: {str(e)}"
+            logger.error(f"Failed to connect to SMTP server: {error_msg}")
+            self.last_error = error_msg
+            self.connected = False
+            return False
         except Exception as e:
-            logger.error(f"Failed to connect to SMTP server: {e}")
+            error_msg = f"Connection error: {str(e)}"
+            logger.error(f"Failed to connect to SMTP server: {error_msg}")
+            self.last_error = error_msg
             self.connected = False
             return False
     
