@@ -1,48 +1,93 @@
 # Email Data Generation Project - Complete Plan
 
+**Version:** 1.0.0  
 **Repository:** `/Users/warrensealey/threatsampleproject/`  
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
 ## Project Overview
 
-Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, and Cynic test emails) through Symantec Email Security Cloud via SMTP, with a web-based configuration interface and email client functionality.
+Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
 ## Project Structure
 
 ```
 threatsampleproject/
-├── backend/
-│   ├── app.py                 # Flask main application
-│   ├── config.py              # Configuration management
-│   ├── email_generator.py     # Email generation coordinator
-│   ├── smtp_client.py         # SMTP client for Symantec
-│   ├── email_client.py        # IMAP client for reading emails
-│   ├── generators/
-│   │   ├── __init__.py
-│   │   ├── phishing.py        # Phishing email generator (based on phishtank-automation)
-│   │   ├── eicar.py           # EICAR test email generator
-│   │   └── cynic.py           # Cynic test email generator (based on cynictest)
-│   └── api/
-│       ├── __init__.py
-│       └── routes.py          # REST API endpoints
-├── frontend/
-│   ├── index.html             # Main dashboard
-│   ├── config.html            # Configuration page
-│   ├── email.html             # Email client page
+├── backend/                 # Python Flask backend
+│   ├── api/                 # REST API routes
+│   │   └── routes.py        # API endpoints
+│   ├── generators/         # Email generators
+│   │   ├── phishing.py     # Phishing email generator
+│   │   ├── eicar.py        # EICAR test generator
+│   │   ├── cynic.py        # Cynic test generator
+│   │   ├── gtube.py        # GTUBE spam-test generator
+│   │   └── custom.py       # Custom email generator
+│   ├── app.py              # Flask main application
+│   ├── config.py           # Configuration management
+│   ├── email_generator.py  # Email generation coordinator
+│   ├── smtp_client.py      # SMTP client
+│   └── email_client.py     # IMAP client (for reading emails)
+├── frontend/               # Web frontend
+│   ├── index.html          # Main dashboard
+│   ├── config.html         # Configuration page
 │   ├── js/
-│   │   ├── app.js             # Main application logic
-│   │   └── api.js             # API client
+│   │   ├── app.js          # Main application logic
+│   │   └── api.js          # API client
 │   └── css/
-│       └── style.css          # Styling
-├── templates/                 # Email templates
-├── data/                      # Data storage (config, logs)
-│   ├── config.json            # Application configuration
-│   └── logs/                  # Application logs
-├── requirements.txt
-├── README.md
-├── PROJECT_PLAN.md
-└── start.sh                   # Startup script
+│       └── style.css       # Styling
+├── data/                   # Data storage (auto-created)
+│   └── config.json         # Application configuration
+├── .github/
+│   └── workflows/
+│       └── docker.yml      # GitHub Actions Docker build
+├── Dockerfile              # Docker container definition
+├── docker-compose.yml      # Docker Compose configuration
+├── .dockerignore           # Docker ignore patterns
+├── requirements.txt        # Python dependencies
+├── VERSION                 # Version information
+├── start.sh                # Startup script
+├── README.md               # Project overview
+├── INSTALLATION.md         # Installation guide
+├── DOCUMENTATION.md        # Complete documentation
+└── PROJECT_PLAN.md         # This file
 ```
+
+## Current Features (Version 1.0.0)
+
+### Email Types
+- **Phishing Emails**: Test emails with PhishTank URLs
+- **EICAR Test Emails**: Standard antivirus test files
+- **Cynic Test Emails**: Password-protected VBS archives
+- **GTUBE Spam-Test Emails**: Single-message spam detector tests using canonical GTUBE string
+- **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat)
+
+### Email Providers
+- GMX (recommended, tested and verified)
+- Gmail (requires app-specific password)
+- Yahoo (requires app-specific password)
+- iCloud
+- Zoho
+- Outlook.com
+- Office365
+- AOL
+
+### Configuration Management
+- Multiple email client configurations (save, edit, delete, switch)
+- Current active configuration tracking
+- Default recipients and email count settings
+- Email sending history (last 100 entries)
+
+### User Interface
+- Dashboard with email sending options
+- Configuration page with provider selection
+- Detailed connection information display
+- Email sending history view
+- Test email configuration validation
+
+### Docker Support
+- Dockerfile for containerization
+- Docker Compose for easy deployment
+- GitHub Actions automated builds
+- GitHub Container Registry integration
 
 ## Implementation Details
 
@@ -50,140 +95,81 @@ threatsampleproject/
 
 1. **SMTP Client (`smtp_client.py`)**:
    - Python smtplib implementation
-   - Support for Symantec Email Security Cloud SMTP
+   - Support for multiple email providers
    - Configurable server, port, authentication (TLS/SSL)
-   - Support for email attachments (7z, EICAR files)
-   - Context manager support for connection handling
+   - Support for email attachments
+   - Display name support for sender
+   - Detailed error reporting
 
 2. **Email Client (`email_client.py`)**:
-   - IMAP client for reading emails from web-based email accounts
+   - IMAP client for reading emails
    - Support for SSL/TLS connections
    - Read inbox, folders, messages
-   - Display email headers, body, attachments
-   - Configurable through UI (IMAP server, port, username, password, SSL settings)
+   - Configurable through UI
 
 3. **Email Generators**:
-   - **Phishing Generator (`generators/phishing.py`)**:
-     - Integrates with PhishTank online-valid dataset
-     - Fetches phishing URLs from PhishTank API
-     - Generates realistic phishing email templates
-     - Includes phishing URLs in email body
-     - Multiple template types (warning, urgent, notification)
-   - **EICAR Generator (`generators/eicar.py`)**:
-     - Generates EICAR test file (standard antivirus test file)
-     - Creates temporary EICAR.com file
-     - Attaches to email for antivirus testing
-   - **Cynic Generator (`generators/cynic.py`)**:
-     - Generates VBS test files based on cynictestmaster.vbs
-     - Creates password-protected 7z archives (password: "password")
-     - Uses same body template as cynictest scripts
-     - Supports both 7z command-line tool and py7zr library
+   - **Phishing Generator**: Integrates with PhishTank API
+   - **EICAR Generator**: Creates standard antivirus test files
+   - **Cynic Generator**: Generates password-protected VBS archives
+   - **GTUBE Generator**: Creates spam-test emails with GTUBE string
+   - **Custom Generator**: Fully configurable email generation
 
 4. **Email Generator Coordinator (`email_generator.py`)**:
    - Orchestrates email generation and sending
    - Derives SMTP settings from email client configuration
    - Handles email sending with error tracking
    - Maintains email sending history
+   - Provides detailed connection information
 
 5. **Configuration Management (`config.py`)**:
    - JSON-based configuration storage
-   - Stores SMTP settings (server, port, username, password, TLS/SSL)
-   - Stores email client settings (IMAP/SMTP server, port, username, password, SSL)
-   - Email generation parameters (count, recipients, templates)
-   - Email sending history (last 100 entries)
-   - Auto-creates config file with defaults if not exists
+   - Multiple email client configurations
+   - Current active configuration tracking
+   - Email generation parameters
+   - Email sending history
+   - Auto-creates config file with defaults
 
 6. **REST API (`api/routes.py`)**:
-   - `GET /api/config` - Retrieve current configuration
-   - `POST /api/config` - Update configuration
-   - `GET /api/email/config` - Get email client configuration
-   - `POST /api/email/config` - Update email client configuration
-   - `GET /api/email/folders` - List email folders
-   - `GET /api/email/messages` - Get messages from folder
-   - `GET /api/email/message/{id}` - Get specific message
-   - `POST /api/test/email` - Test email service configuration (send test email with connection info)
-   - `POST /api/send/phishing` - Send phishing test emails
-   - `POST /api/send/eicar` - Send EICAR test emails
-   - `POST /api/send/cynic` - Send Cynic test emails
-   - `GET /api/history` - Get email sending history
+   - Configuration endpoints
+   - Email client configuration management
+   - Email sending endpoints (phishing, EICAR, Cynic, GTUBE, custom)
+   - Test email configuration
+   - History retrieval
 
 ### Frontend Components
 
-1. **Configuration Page (`config.html`)**:
-   - Email provider dropdown selector (AOL, Gmail, MS Outlook, GMX)
-     - Auto-populates IMAP and SMTP settings based on provider
-     - GMX pre-selected by default
-   - Email client settings form:
-     - IMAP server, port, username, password
-     - SSL/TLS options
-   - SMTP settings form:
-     - SMTP server, port
-     - TLS/SSL options
-   - Email generation configuration:
-     - Default recipients (comma-separated)
-     - Default count
-   - Test email service configuration button:
-     - Sends test email with connection info popup
-     - Prompts for receipt confirmation
-   - Save/load configuration functionality
+1. **Dashboard (`index.html`)**:
+   - Email sending interface for all email types
+   - Email history display
+   - Connection details modal
+   - Status indicators
 
-2. **Dashboard (`index.html`)**:
-   - Send email interface:
-     - Phishing emails button
-     - EICAR test emails button
-     - Cynic test emails button
-     - Pre-populates recipients from default configuration
-   - Email history/logs:
-     - Table view of sent emails
-     - Shows type, subject, recipients, time, status
-   - Status indicators for email sending operations
+2. **Configuration Page (`config.html`)**:
+   - Email provider selector with presets
+   - Multiple configuration management
+   - Test email configuration
+   - Default recipients and count settings
 
-3. **Email Client Page (`email.html`)**:
-   - Three-panel layout:
-     - Folder list sidebar
-     - Message list view
-     - Message reading pane
-   - Email account connection status
-   - Folder navigation
-   - Message viewing with headers and body
-   - Attachment information display
-   - Refresh functionality
+## API Endpoints
 
-### Key Features
+### Configuration
+- `GET /api/config` - Get all configuration
+- `POST /api/config` - Update configuration
+- `GET /api/email/config` - Get email client config (with optional name parameter)
+- `POST /api/email/config` - Update email client config (requires config_name)
+- `GET /api/email/configs` - Get all saved configurations
+- `DELETE /api/email/config/<config_name>` - Delete a configuration
+- `GET /api/email/config/current` - Get current active configuration name
+- `POST /api/email/config/current` - Set current active configuration
 
-1. **Email Provider Presets**:
-   - AOL: imap.aol.com:993, smtp.aol.com:465
-   - Gmail: imap.gmail.com:993, smtp.gmail.com:587
-   - MS Outlook: outlook.office365.com:993, smtp.office365.com:587
-   - GMX: imap.gmx.com:993, mail.gmx.com:587 (pre-selected by default)
-
-2. **Email Testing**:
-   - Test email configuration with connection status popup
-   - Uses default recipient or prompts if not configured
-   - Shows SMTP connection details
-   - Confirms receipt with user
-
-3. **Default Recipients**:
-   - Configurable default recipients
-   - Auto-populates in send dialogs
-   - Can be overridden per send operation
-
-### Integration Points
-
-- **PhishTank Integration**: 
-  - Reference: `~/phishtank-automation` on development server (wsealey@192.168.1.177)
-  - Fetches online-valid dataset from PhishTank API
-  - Uses PhishTank URLs for phishing email generation
-
-- **Cynic Test Integration**: 
-  - Reference: `~/cynictest` on development server
-  - Uses cynictestmaster.vbs as template for VBS file generation
-  - Uses same 7z packaging method (password-protected archives)
-  - Uses same email body template
-
-- **Email Sending**: 
-  - Uses Python SMTP for email sending
-  - Maintains same attachment/body structure as original scripts
+### Email Operations
+- `POST /api/test/email` - Test email configuration
+- `POST /api/send/phishing` - Send phishing emails
+- `POST /api/send/eicar` - Send EICAR test emails
+- `POST /api/send/cynic` - Send Cynic test emails
+- `POST /api/send/gtube` - Send GTUBE spam-test email
+- `POST /api/send/custom` - Send custom emails
+- `GET /api/history` - Get email sending history
 
 ## Dependencies
 
@@ -198,6 +184,82 @@ threatsampleproject/
 - json (built-in, for configuration storage)
 - 7z command-line tool (optional, for Cynic test emails - py7zr used as fallback)
 
+## Installation Methods
+
+### Docker (Recommended)
+- Pre-built images available from GitHub Container Registry
+- Docker Compose for easy deployment
+- Automated builds via GitHub Actions
+
+### Manual Installation
+- Python 3.8+ required
+- Virtual environment recommended
+- Install dependencies via pip
+
+See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
+
+## Security Considerations
+
+### Current Security Measures
+- Passwords masked in API responses
+- Configuration file excluded from git
+- Non-root user in Docker containers
+- File permissions for sensitive data
+
+### Planned Security Enhancements
+
+1. **Configuration Encryption** (Planned)
+   - Encrypt password fields in configuration file
+   - Use Fernet symmetric encryption
+   - Key management via environment variable or key file
+   - Automatic migration from plain text
+   - Scope: Encrypt passwords only (not usernames)
+
+2. **Credential Management** (Completed)
+   - Removed hardcoded credentials from code
+   - Git history cleaned using BFG Repo-Cleaner
+   - Credentials stored only in local config file
+
+## Future Enhancements
+
+### High Priority
+1. **Configuration Encryption**
+   - Implement Fernet encryption for password fields
+   - Add encryption key management
+   - Update documentation
+
+### Medium Priority
+2. **Email Template Customization**
+   - User-defined email templates
+   - Template library
+   - Template sharing
+
+3. **Scheduled Email Sending**
+   - Cron-like scheduling
+   - Recurring email sends
+   - Schedule management UI
+
+4. **Email Statistics and Reporting**
+   - Success/failure rates
+   - Provider performance metrics
+   - Historical trends
+
+### Low Priority
+5. **Email Search Functionality**
+   - Search sent emails
+   - Filter by type, date, status
+   - Export capabilities
+
+6. **Attachment Download Support**
+   - Download sent attachments
+   - Attachment library
+   - Attachment preview
+
+7. **Advanced Configuration Options**
+   - Email rate limiting
+   - Retry policies
+   - Custom SMTP headers
+
 ## Development Server References
 
 - **SSH Access**: `wsealey@192.168.1.177`
@@ -205,88 +267,43 @@ threatsampleproject/
 - **Cynic Test**: `~/cynictest`
 - **Application Location**: `~/email-data-generation`
 
-## Installation and Setup
+## Docker Deployment
 
-### Local Development
+### GitHub Container Registry
+- **Image**: `ghcr.io/warrensealey/threatsampleproject:latest`
+- **Version Tags**: `ghcr.io/warrensealey/threatsampleproject:1.0.0`
+- **Automated Builds**: On push to main branch
+- **Workflow**: `.github/workflows/docker.yml`
 
-1. Clone the repository
-2. Install dependencies: `pip install -r requirements.txt`
-3. Install 7z tool (optional, for Cynic emails)
-4. Run: `python backend/app.py`
-5. Access at http://localhost:5000
-
-### Development Server
-
-The application is installed at `~/email-data-generation` on the development server.
-
-**Start the application:**
+### Local Docker Usage
 ```bash
-cd ~/email-data-generation
-./start.sh
+# Pull and run
+docker pull ghcr.io/warrensealey/threatsampleproject:latest
+docker run -p 5000:5000 -v $(pwd)/data:/app/data ghcr.io/warrensealey/threatsampleproject:latest
+
+# Or use docker-compose
+docker-compose up
 ```
 
-Or manually:
-```bash
-cd ~/email-data-generation
-export PYTHONPATH=.:$PYTHONPATH
-python3 backend/app.py
-```
+## Version History
 
-## Configuration Flow
+### Version 1.0.0 (Current)
+- Initial release
+- All email types implemented (Phishing, EICAR, Cynic, GTUBE, Custom)
+- Multiple email provider support
+- Multiple configuration management
+- Docker containerization
+- GitHub Actions automated builds
+- Comprehensive documentation
 
-1. **Initial Setup**:
-   - Access configuration page
-   - Select email provider (GMX pre-selected by default)
-   - Configure email client (IMAP) and SMTP settings
-   - Set default recipients for email generation
-   - Test email configuration
+## Contributing
 
-2. **Sending Test Emails**:
-   - Go to dashboard
-   - Select email type (Phishing, EICAR, Cynic)
-   - Recipients pre-populated from defaults
-   - Emails sent through configured SMTP server
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-4. **Reading Emails**:
-   - Configure email client settings
-   - Access Email Client page
-   - Browse folders and read messages
+## License
 
-## API Endpoints Summary
-
-### Configuration
-- `GET /api/config` - Get all configuration
-- `POST /api/config` - Update configuration
-- `GET /api/email/config` - Get email client config
-- `POST /api/email/config` - Update email client config
-
-### Email Client
-- `GET /api/email/folders` - List folders
-- `GET /api/email/messages?folder=INBOX&limit=50` - Get messages
-- `GET /api/email/message/{id}?folder=INBOX` - Get message details
-
-### Email Operations
-- `POST /api/test/email` - Test email configuration
-- `POST /api/send/phishing` - Send phishing emails
-- `POST /api/send/eicar` - Send EICAR test emails
-- `POST /api/send/cynic` - Send Cynic test emails
-- `GET /api/history` - Get email history
-
-
-## Security Considerations
-
-- Passwords stored in configuration file (consider encryption for production)
-- SMTP credentials used for sending emails
-- IMAP credentials used for reading emails
-- Test emails sent through configured SMTP server
-- EICAR and Cynic test files are safe test samples, not actual malware
-
-## Future Enhancements
-
-- Email template customization
-- Scheduled email sending
-- Email statistics and reporting
-- Multiple email account support
-- Email search functionality
-- Attachment download support
-- Configuration encryption
+See repository for license information.

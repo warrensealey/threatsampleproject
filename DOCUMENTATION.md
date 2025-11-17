@@ -13,7 +13,9 @@ Comprehensive documentation for the Email Data Generation application.
 5. [Email Types](#email-types)
 6. [Configuration](#configuration)
 7. [Usage Guide](#usage-guide)
-8. [Troubleshooting](#troubleshooting)
+8. [Docker Deployment](#docker-deployment)
+9. [Troubleshooting](#troubleshooting)
+10. [Security Considerations](#security-considerations)
 
 ## Project Overview
 
@@ -483,6 +485,42 @@ The application provides detailed error messages with connection attempt informa
 - **Send Failed**: Connection successful but email sending failed
 
 All error messages include troubleshooting suggestions.
+
+## Docker Deployment
+
+The application is containerized and available via Docker.
+
+### GitHub Container Registry
+
+- **Image**: `ghcr.io/warrensealey/threatsampleproject:latest`
+- **Version Tags**: Available for each version (e.g., `1.0.0`)
+- **Automated Builds**: On push to main branch via GitHub Actions
+
+### Running with Docker
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/warrensealey/threatsampleproject:latest
+
+# Run the container
+docker run -d \
+  --name email-data-gen \
+  -p 5000:5000 \
+  -v $(pwd)/data:/app/data \
+  ghcr.io/warrensealey/threatsampleproject:latest
+
+# Or use docker-compose
+docker-compose up -d
+```
+
+### Docker Configuration
+
+- **Port**: 5000 (configurable via `-p` flag)
+- **Data Persistence**: `data/` directory mounted as volume
+- **User**: Runs as non-root user for security
+- **Health Checks**: Included in docker-compose configuration
+
+See [INSTALLATION.md](INSTALLATION.md) for detailed Docker setup instructions.
 
 ## Security Considerations
 
