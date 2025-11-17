@@ -59,6 +59,22 @@ function setupEmailSendModal() {
         e.preventDefault();
         await sendCustomEmail();
     });
+    
+    // Phishing warning modal handlers
+    document.getElementById('phishingWarningConfirmBtn')?.addEventListener('click', () => {
+        document.getElementById('phishingWarningModal').classList.add('hidden');
+        showSendDialog('phishing');
+    });
+    
+    document.getElementById('phishingWarningCancelBtn')?.addEventListener('click', () => {
+        document.getElementById('phishingWarningModal').classList.add('hidden');
+    });
+    
+    document.getElementById('phishingWarningModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'phishingWarningModal') {
+            document.getElementById('phishingWarningModal').classList.add('hidden');
+        }
+    });
 }
 
 async function loadDefaultRecipients() {
@@ -74,7 +90,7 @@ async function loadDefaultRecipients() {
 
 function setupSendButtons() {
     document.getElementById('sendPhishingBtn')?.addEventListener('click', () => {
-        showSendDialog('phishing');
+        showPhishingWarning();
     });
     
     document.getElementById('sendEicarBtn')?.addEventListener('click', () => {
@@ -92,6 +108,13 @@ function setupSendButtons() {
     document.getElementById('sendCustomBtn')?.addEventListener('click', () => {
         showCustomEmailModal();
     });
+}
+
+function showPhishingWarning() {
+    const modal = document.getElementById('phishingWarningModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+    }
 }
 
 function showSendDialog(type) {

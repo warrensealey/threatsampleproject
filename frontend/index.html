@@ -74,6 +74,41 @@
         </div>
     </div>
 
+    <!-- Phishing Warning Modal -->
+    <div id="phishingWarningModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 600px;">
+            <h2 style="color: #d32f2f; margin-top: 0;">⚠️ Warning: Real Phishing URLs</h2>
+            <div style="padding: 20px 0;">
+                <p style="font-size: 16px; line-height: 1.6; margin-bottom: 15px;">
+                    <strong>This feature downloads and sends REAL, active phishing URLs from the PhishTank website.</strong>
+                </p>
+                <p style="font-size: 16px; line-height: 1.6; margin-bottom: 15px;">
+                    PhishTank is a collaborative clearing house for data and information about phishing on the Internet. 
+                    The URLs downloaded are <strong>real, active phishing sites</strong> that have been reported and verified.
+                </p>
+                <p style="font-size: 16px; line-height: 1.6; margin-bottom: 15px;">
+                    <strong>Important:</strong> The emails generated using these URLs should be considered <strong>MALICIOUS</strong> and 
+                    <strong>MUST NOT</strong> be opened on production computers or any system where sensitive data is stored.
+                </p>
+                <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+                    For more information about PhishTank, visit: 
+                    <a href="https://www.phishtank.com" target="_blank" rel="noopener noreferrer" style="color: #1976d2; text-decoration: underline;">
+                        https://www.phishtank.com
+                    </a>
+                </p>
+                <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 15px; margin-bottom: 20px;">
+                    <p style="margin: 0; font-weight: bold; color: #856404;">
+                        ⚠️ Only use this feature in isolated test environments. Do not open these emails on production systems.
+                    </p>
+                </div>
+            </div>
+            <div class="btn-group" style="justify-content: center;">
+                <button class="btn btn-danger" id="phishingWarningConfirmBtn">I Understand - Continue</button>
+                <button class="btn btn-secondary" id="phishingWarningCancelBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Custom Email Modal -->
     <div id="customEmailModal" class="modal hidden">
         <div class="modal-content" style="max-width: 700px;">
