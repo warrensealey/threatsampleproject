@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  email-data-gen:
+    build: .
+    container_name: email-data-gen
+    ports:
+      - "5000:5000"
+    volumes:
+      # Mount data directory for persistence
+      - ./data:/app/data
+    environment:
+      - PYTHONPATH=/app
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import requests; requests.get('http://localhost:5000')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

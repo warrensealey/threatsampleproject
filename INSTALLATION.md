@@ -56,6 +56,89 @@ Before installing the application, ensure you have the following:
 - After configuring the app password, Yahoo can send phishing URL tests and the GTUBE spam-test email.
 - Yahoo may block the EICAR and Cynic attachments on outbound SMTP similar to Gmail, so those specific templates may fail when using Yahoo as the provider.
 
+## Installation Methods
+
+### Method 1: Docker (Recommended)
+
+Docker provides the easiest way to run the application with all dependencies pre-configured.
+
+#### Prerequisites for Docker
+
+1. **Docker** (version 20.10 or higher)
+   - **macOS**: Download from https://www.docker.com/products/docker-desktop
+   - **Linux**: `sudo apt-get install docker.io` (Debian/Ubuntu) or use your distribution's package manager
+   - **Windows**: Download Docker Desktop from https://www.docker.com/products/docker-desktop
+   - Verify: `docker --version`
+
+2. **Docker Compose** (optional, for easier management)
+   - Usually included with Docker Desktop
+   - Verify: `docker-compose --version`
+
+#### Docker Installation Steps
+
+**Option A: Using Pre-built Image from GitHub Container Registry**
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/warrensealey/threatsampleproject:latest
+
+# Run the container
+docker run -d \
+  --name email-data-gen \
+  -p 5000:5000 \
+  -v $(pwd)/data:/app/data \
+  ghcr.io/warrensealey/threatsampleproject:latest
+```
+
+**Option B: Using Docker Compose (Recommended)**
+
+```bash
+# Clone the repository
+git clone https://github.com/warrensealey/threatsampleproject.git
+cd threatsampleproject
+
+# Start the application
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop the application
+docker-compose down
+```
+
+**Option C: Build from Source**
+
+```bash
+# Clone the repository
+git clone https://github.com/warrensealey/threatsampleproject.git
+cd threatsampleproject
+
+# Build the Docker image
+docker build -t email-data-gen .
+
+# Run the container
+docker run -d \
+  --name email-data-gen \
+  -p 5000:5000 \
+  -v $(pwd)/data:/app/data \
+  email-data-gen
+```
+
+#### Docker Configuration
+
+- **Port**: The application runs on port 5000 inside the container and is mapped to port 5000 on your host
+- **Data Persistence**: The `data/` directory is mounted as a volume to preserve your configuration
+- **Access**: Open http://localhost:5000 in your browser
+
+#### Docker Troubleshooting
+
+- **Port already in use**: Change the port mapping: `-p 8080:5000` (access at http://localhost:8080)
+- **Permission issues**: Ensure the `data/` directory has proper permissions: `chmod 755 data`
+- **View logs**: `docker logs email-data-gen` or `docker-compose logs`
+
+### Method 2: Manual Installation
+
 ## Installation Steps
 
 ### 1. Clone the Repository

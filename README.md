@@ -18,7 +18,22 @@ Full-stack Python web application for generating and sending test emails (phishi
 
 ## Quick Start
 
-### Installation
+### Docker (Recommended)
+
+The easiest way to run the application is using Docker:
+
+```bash
+# Pull from GitHub Container Registry
+docker pull ghcr.io/warrensealey/threatsampleproject:latest
+
+# Run with docker
+docker run -p 5000:5000 -v $(pwd)/data:/app/data ghcr.io/warrensealey/threatsampleproject:latest
+
+# Or use docker-compose
+docker-compose up
+```
+
+### Manual Installation
 
 ```bash
 # Clone the repository
