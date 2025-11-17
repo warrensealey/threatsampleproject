@@ -19,6 +19,25 @@
         <div class="card">
             <h2>Email Client Configuration</h2>
             <p>Configure IMAP settings for reading emails and SMTP settings for sending emails from your web-based email account.</p>
+            
+            <div class="form-group">
+                <label for="configSelector">Configuration:</label>
+                <select id="configSelector" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <option value="">-- Create New Configuration --</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="configNameGroup">
+                <label for="configName">Configuration Name:</label>
+                <input type="text" id="configName" placeholder="e.g., gmx-main, gmail-work" required>
+                <small style="color: #666; display: block; margin-top: 5px;">Enter a unique name for this configuration</small>
+            </div>
+            
+            <div id="configList" class="hidden" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
+                <h3 style="margin-bottom: 10px; font-size: 1.1em;">Saved Configurations</h3>
+                <div id="configListItems"></div>
+            </div>
+            
             <div class="form-group">
                 <label for="emailProvider">Email Provider:</label>
                 <select id="emailProvider" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
@@ -110,17 +129,6 @@
             </div>
         </div>
 
-        <div class="card">
-            <h2>Mutt Installation Status</h2>
-            <p>Check if mutt is installed and install it if needed.</p>
-            <div id="muttStatus">
-                <p class="loading">Checking mutt installation...</p>
-            </div>
-            <div id="muttActions" class="hidden">
-                <button class="btn btn-primary" id="installMuttBtn">Install Mutt</button>
-                <button class="btn btn-secondary" id="refreshMuttStatusBtn">Refresh Status</button>
-            </div>
-        </div>
 
         <div class="card">
             <h2>Email Generation Configuration</h2>

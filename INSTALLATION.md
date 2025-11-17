@@ -1,5 +1,7 @@
 # Installation Guide
 
+**Version 1.0.0**
+
 This guide provides step-by-step instructions for installing and setting up the Email Data Generation application.
 
 ## Prerequisites
@@ -27,6 +29,32 @@ Before installing the application, ensure you have the following:
    - **Linux (Debian/Ubuntu)**: `sudo apt-get install p7zip-full`
    - **Linux (RHEL/CentOS)**: `sudo yum install p7zip`
    - **Windows**: Download from https://www.7-zip.org/
+
+### Email Account Setup
+
+> **⚠️ STRONGLY RECOMMENDED: GMX Email Account**
+> 
+> **We strongly recommend setting up a GMX email account** for use with this application. GMX server settings have been thoroughly tested and are known to work reliably. All other email provider settings are still in development and may require additional configuration or troubleshooting.
+> 
+> **To create a free GMX account:**
+> 1. Visit https://www.gmx.com/
+> 2. Click "Sign Up" or "Create Account"
+> 3. Follow the registration process
+> 4. Once created, you can use your GMX email address and password in the application configuration
+> 
+> Using a GMX account will provide the most reliable experience and reduce setup issues.
+
+### Gmail Considerations
+
+- Gmail requires creating an **app-specific password** (Google Account → Security → App Passwords) before IMAP/SMTP access will work with this project.
+- After configuring the app password, Gmail can send phishing URL tests and the GTUBE spam-test email.
+- Google currently blocks the EICAR and Cynic attachments on outbound SMTP, so those specific templates will fail when using Gmail as the provider.
+
+### Yahoo Considerations
+
+- Yahoo requires creating an **app-specific password** (Yahoo Account → Account Security → Generate app password) before IMAP/SMTP access will work with this project. Without it, you will see "Connection unexpectedly closed" errors.
+- After configuring the app password, Yahoo can send phishing URL tests and the GTUBE spam-test email.
+- Yahoo may block the EICAR and Cynic attachments on outbound SMTP similar to Gmail, so those specific templates may fail when using Yahoo as the provider.
 
 ## Installation Steps
 
@@ -120,10 +148,16 @@ The application will be accessible on:
 1. Open the Configuration page: http://localhost:5000/config
 
 2. **Configure Email Provider Settings**:
-   - Select your email provider from the dropdown (GMX, Gmail, Yahoo, iCloud, Zoho, Outlook.com, etc.)
-   - The form will auto-populate with the correct server settings
-   - Enter your email username and password
-   - Verify IMAP and SMTP settings are correct
+   - **⚠️ IMPORTANT: We strongly recommend using a GMX email account** as it has been tested and verified to work. Other providers may require additional troubleshooting.
+   - Select **GMX** from the email provider dropdown (it's pre-selected by default)
+   - The form will auto-populate with the correct GMX server settings:
+     - IMAP Server: `imap.gmx.com:993`
+     - SMTP Server: `mail.gmx.com:587`
+   - Enter your GMX email address (e.g., `yourname@gmx.com`) as the username
+   - Enter your GMX account password
+   - Verify IMAP and SMTP settings are correct (should be pre-filled for GMX)
+   
+   **Note**: If you choose to use a different email provider (Gmail, Yahoo, iCloud, etc.), be aware that these settings are still in development and may require additional configuration or troubleshooting.
 
 3. **Configure Email Generation Defaults**:
    - Set default recipient email addresses (comma-separated)
@@ -133,7 +167,7 @@ The application will be accessible on:
    - Click "Test Email Configuration" button
    - Enter a test recipient email address
    - Verify the connection details and test email delivery
-
+   - Once configuration succeeds, you can exercise phishing, EICAR, Cynic, or the **GTUBE spam-test** option from the dashboard. The GTUBE option sends a single message containing the canonical GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X` ([spec](https://en.wikipedia.org/wiki/GTUBE)) to validate spam-detection pipelines.
 ## Troubleshooting
 
 ### Port Already in Use
@@ -238,4 +272,5 @@ For deployment to a development server:
 After installation, see:
 - [README.md](README.md) for project overview and usage
 - [DOCUMENTATION.md](DOCUMENTATION.md) for detailed API and feature documentation
+- Trigger the dashboard GTUBE option when you need to verify that downstream anti-spam tooling reacts to the GTUBE string per [the reference specification](https://en.wikipedia.org/wiki/GTUBE).
 

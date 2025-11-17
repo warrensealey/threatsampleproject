@@ -57,7 +57,6 @@ threatsampleproject/
 
 2. **Email Client (`email_client.py`)**:
    - IMAP client for reading emails from web-based email accounts
-   - Based on mutt configuration structure
    - Support for SSL/TLS connections
    - Read inbox, folders, messages
    - Display email headers, body, attachments
@@ -103,8 +102,6 @@ threatsampleproject/
    - `GET /api/email/messages` - Get messages from folder
    - `GET /api/email/message/{id}` - Get specific message
    - `POST /api/test/email` - Test email service configuration (send test email with connection info)
-   - `GET /api/mutt/status` - Check if mutt is installed and get version
-   - `POST /api/mutt/install` - Install mutt using hands-off installation script
    - `POST /api/send/phishing` - Send phishing test emails
    - `POST /api/send/eicar` - Send EICAR test emails
    - `POST /api/send/cynic` - Send Cynic test emails
@@ -115,17 +112,13 @@ threatsampleproject/
 1. **Configuration Page (`config.html`)**:
    - Email provider dropdown selector (AOL, Gmail, MS Outlook, GMX)
      - Auto-populates IMAP and SMTP settings based on provider
-     - GMX pre-populated with mutt settings from development server
+     - GMX pre-selected by default
    - Email client settings form:
      - IMAP server, port, username, password
      - SSL/TLS options
    - SMTP settings form:
      - SMTP server, port
      - TLS/SSL options
-   - Mutt installation status module:
-     - Displays mutt installation status and version
-     - Install button if mutt not available
-     - Refresh status button
    - Email generation configuration:
      - Default recipients (comma-separated)
      - Default count
@@ -162,7 +155,7 @@ threatsampleproject/
    - AOL: imap.aol.com:993, smtp.aol.com:465
    - Gmail: imap.gmail.com:993, smtp.gmail.com:587
    - MS Outlook: outlook.office365.com:993, smtp.office365.com:587
-   - GMX: imap.gmx.com:993, mail.gmx.com:587 (pre-populated with user's mutt settings)
+   - GMX: imap.gmx.com:993, mail.gmx.com:587 (pre-selected by default)
 
 2. **Email Testing**:
    - Test email configuration with connection status popup
@@ -170,13 +163,7 @@ threatsampleproject/
    - Shows SMTP connection details
    - Confirms receipt with user
 
-3. **Mutt Installation**:
-   - Automatic mutt status checking
-   - OS detection (Ubuntu/Debian, RHEL/CentOS, macOS)
-   - Hands-off installation via web UI
-   - Installation progress feedback
-
-4. **Default Recipients**:
+3. **Default Recipients**:
    - Configurable default recipients
    - Auto-populates in send dialogs
    - Can be overridden per send operation
@@ -194,14 +181,9 @@ threatsampleproject/
   - Uses same 7z packaging method (password-protected archives)
   - Uses same email body template
 
-- **Mutt Configuration**: 
-  - Reference: `~/.muttrc` on development server
-  - Email client settings based on mutt configuration structure
-  - SMTP settings derived from mutt config
-
 - **Email Sending**: 
-  - Uses Python SMTP instead of mutt command-line
-  - Maintains same attachment/body structure as mutt-based scripts
+  - Uses Python SMTP for email sending
+  - Maintains same attachment/body structure as original scripts
 
 ## Dependencies
 
@@ -214,7 +196,6 @@ threatsampleproject/
 - imaplib (built-in, for IMAP email reading)
 - email (built-in, for email construction and parsing)
 - json (built-in, for configuration storage)
-- mutt (optional, for reference configuration - can be installed via UI)
 - 7z command-line tool (optional, for Cynic test emails - py7zr used as fallback)
 
 ## Development Server References
@@ -222,7 +203,6 @@ threatsampleproject/
 - **SSH Access**: `wsealey@192.168.1.177`
 - **PhishTank Automation**: `~/phishtank-automation`
 - **Cynic Test**: `~/cynictest`
-- **Mutt Config**: `~/.muttrc`
 - **Application Location**: `~/email-data-generation`
 
 ## Installation and Setup
@@ -256,17 +236,12 @@ python3 backend/app.py
 
 1. **Initial Setup**:
    - Access configuration page
-   - Select email provider (GMX pre-selected with mutt settings)
+   - Select email provider (GMX pre-selected by default)
    - Configure email client (IMAP) and SMTP settings
    - Set default recipients for email generation
    - Test email configuration
 
-2. **Mutt Installation** (if needed):
-   - Check mutt status on configuration page
-   - Click "Install Mutt" if not installed
-   - Installation runs automatically based on OS
-
-3. **Sending Test Emails**:
+2. **Sending Test Emails**:
    - Go to dashboard
    - Select email type (Phishing, EICAR, Cynic)
    - Recipients pre-populated from defaults
@@ -297,9 +272,6 @@ python3 backend/app.py
 - `POST /api/send/cynic` - Send Cynic test emails
 - `GET /api/history` - Get email history
 
-### System
-- `GET /api/mutt/status` - Check mutt installation
-- `POST /api/mutt/install` - Install mutt
 
 ## Security Considerations
 

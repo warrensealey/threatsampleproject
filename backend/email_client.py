@@ -1,6 +1,5 @@
 """
 IMAP email client for reading emails from web-based email accounts.
-Based on mutt configuration for IMAP access.
 """
 import imaplib
 import email

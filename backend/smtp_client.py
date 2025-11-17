@@ -1,6 +1,6 @@
 """
-SMTP client for sending emails through Symantec Email Security Cloud.
-Replaces mutt functionality with Python smtplib.
+SMTP client for sending emails through SMTP servers.
+Uses Python smtplib for email sending.
 """
 import smtplib
 from email.mime.text import MIMEText
@@ -74,6 +74,12 @@ class SMTPClient:
             self.last_error = error_msg
             self.connected = False
             return False
+        except smtplib.SMTPServerDisconnected as e:
+            error_msg = f"Connection closed unexpectedly: {str(e)}. This often happens when the provider rejects the credentials (e.g., missing app-specific password or legacy IMAP/SMTP access)."
+            logger.error(f"Failed to connect to SMTP server: {error_msg}")
+            self.last_error = error_msg
+            self.connected = False
+            return False
         except Exception as e:
             error_msg = f"Connection error: {str(e)}"
             logger.error(f"Failed to connect to SMTP server: {error_msg}")
@@ -90,7 +96,7 @@ class SMTPClient:
                 pass
             self.connected = False
     
-    def send_email(self, to_addresses, subject, body, attachments=None, from_address=None):
+    def send_email(self, to_addresses, subject, body, attachments=None, from_address=None, display_name=None):
         """
         Send an email with optional attachments.
         
@@ -100,6 +106,7 @@ class SMTPClient:
             body: Email body text
             attachments: List of file paths to attach
             from_address: Sender email address (optional)
+            display_name: Sender display name (optional)
         
         Returns:
             bool: True if email sent successfully, False otherwise
@@ -116,11 +123,20 @@ class SMTPClient:
             # Create message
             msg = MIMEMultipart()
             
-            # Set from address
+            # Set from address with optional display name
             if from_address:
-                msg['From'] = from_address
+                email_address = from_address
             elif self.smtp_config.get("username"):
-                msg['From'] = self.smtp_config.get("username")
+                email_address = self.smtp_config.get("username")
+            else:
+                email_address = None
+            
+            if email_address:
+                if display_name:
+                    # Format: "Display Name <email@example.com>"
+                    msg['From'] = f'"{display_name}" <{email_address}>'
+                else:
+                    msg['From'] = email_address
             
             msg['To'] = ", ".join(to_addresses)
             msg['Subject'] = subject

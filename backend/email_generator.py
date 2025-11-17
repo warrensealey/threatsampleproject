@@ -7,6 +7,8 @@ from backend.smtp_client import SMTPClient
 from backend.generators.phishing import PhishingGenerator
 from backend.generators.eicar import EICARGenerator
 from backend.generators.cynic import CynicGenerator
+from backend.generators.gtube import GTUBEGenerator
+from backend.generators.custom import CustomEmailGenerator
 from backend.config import add_history_entry, get_smtp_config
 
 logger = logging.getLogger(__name__)
@@ -20,6 +22,8 @@ class EmailGenerator:
         self.phishing_gen = PhishingGenerator()
         self.eicar_gen = EICARGenerator()
         self.cynic_gen = CynicGenerator()
+        self.custom_gen = CustomEmailGenerator()
+        self.gtube_gen = GTUBEGenerator()
     
     def send_phishing_emails(self, count=1, recipients=None, template_type="warning"):
         """
@@ -77,6 +81,51 @@ class EmailGenerator:
             return results
         except Exception as e:
             logger.error(f"Failed to send Cynic emails: {e}")
+            return {"success": False, "error": str(e), "sent": 0}
+
+    def send_gtube_emails(self, count=1, recipients=None):
+        """
+        Generate and send GTUBE spam-test emails.
+
+        Args:
+            count: Number of emails to send
+            recipients: List of recipient email addresses
+
+        Returns:
+            Dictionary with results
+        """
+        try:
+            emails = self.gtube_gen.generate_emails(count, recipients)
+            results = self._send_emails(emails, "gtube")
+            return results
+        except Exception as e:
+            logger.error(f"Failed to send GTUBE emails: {e}")
+            return {"success": False, "error": str(e), "sent": 0}
+    
+    def send_custom_emails(self, count=1, recipients=None, subject=None, body=None,
+                           display_name=None, attachment_type=None):
+        """
+        Generate and send custom emails with configurable fields.
+
+        Args:
+            count: Number of emails to send
+            recipients: List of recipient email addresses
+            subject: Email subject line
+            body: Email body text
+            display_name: Sender display name (optional)
+            attachment_type: Attachment extension (.zip, .com, .scr, .pdf, .bat) or None
+
+        Returns:
+            Dictionary with results
+        """
+        try:
+            emails = self.custom_gen.generate_emails(
+                count, recipients, subject, body, display_name, attachment_type
+            )
+            results = self._send_emails(emails, "custom")
+            return results
+        except Exception as e:
+            logger.error(f"Failed to send custom emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
     
     def _send_emails(self, emails, email_type):
@@ -194,11 +243,13 @@ Possible Causes:
                 for email_data in emails:
                     try:
                         attachments = email_data.get("attachments", [])
+                        display_name = email_data.get("display_name")
                         success = smtp.send_email(
                             to_addresses=email_data["recipients"],
                             subject=email_data["subject"],
                             body=email_data["body"],
-                            attachments=attachments if attachments else None
+                            attachments=attachments if attachments else None,
+                            display_name=display_name
                         )
                         
                         if success:

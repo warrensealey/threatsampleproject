@@ -136,6 +136,15 @@ nav a.active {
     background: #c0392b;
 }
 
+.btn-warning {
+    background: #f39c12;
+    color: white;
+}
+
+.btn-warning:hover {
+    background: #d68910;
+}
+
 .btn-secondary {
     background: #95a5a6;
     color: white;

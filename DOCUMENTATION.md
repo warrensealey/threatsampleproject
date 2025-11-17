@@ -1,5 +1,7 @@
 # Project Documentation
 
+**Version 1.0.0**
+
 Comprehensive documentation for the Email Data Generation application.
 
 ## Table of Contents
@@ -15,11 +17,13 @@ Comprehensive documentation for the Email Data Generation application.
 
 ## Project Overview
 
-The Email Data Generation application is a full-stack web application designed for generating and sending test emails for security testing purposes. It supports multiple email providers and can generate three types of test emails:
+The Email Data Generation application is a full-stack web application designed for generating and sending test emails for security testing purposes. It supports multiple email providers and can generate several types of test emails:
 
 - **Phishing Emails**: Test emails with PhishTank URLs
 - **EICAR Test Emails**: Standard antivirus test files
 - **Cynic Test Emails**: Password-protected VBS archives
+- **GTUBE Spam-Test Emails**: Single-message spam detector tests that embed the canonical GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X` ([spec](https://en.wikipedia.org/wiki/GTUBE))
+- **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments
 
 ### Key Features
 
@@ -28,6 +32,7 @@ The Email Data Generation application is a full-stack web application designed f
 - Detailed connection information display
 - Email sending history tracking
 - Test email configuration validation
+- GTUBE spam-test workflow for validating anti-spam controls
 
 ## Architecture
 
@@ -41,7 +46,8 @@ threatsampleproject/
 │   ├── generators/         # Email generators
 │   │   ├── phishing.py    # Phishing email generator
 │   │   ├── eicar.py       # EICAR test generator
-│   │   └── cynic.py       # Cynic test generator
+│   │   ├── cynic.py       # Cynic test generator
+│   │   └── gtube.py       # GTUBE spam-test generator
 │   ├── app.py             # Flask application
 │   ├── config.py          # Configuration management
 │   ├── email_generator.py # Email generation coordinator
@@ -139,6 +145,8 @@ Send EICAR test emails.
 }
 ```
 
+**Response** mirrors the other send endpoints and contains `success`, `sent`, `failed`, `total`, `connection_info`, `connection_attempt`, and (on success) `connection_details`.
+
 #### POST `/api/send/cynic`
 Send Cynic test emails.
 
@@ -149,6 +157,40 @@ Send Cynic test emails.
   "recipients": ["email@example.com"]
 }
 ```
+
+#### POST `/api/send/gtube`
+Send GTUBE spam-test emails.
+
+**Request Body**:
+```json
+{
+  "count": 1,
+  "recipients": ["email@example.com"]
+}
+```
+
+#### POST `/api/send/custom`
+Send custom emails with configurable fields.
+
+**Request Body**:
+```json
+{
+  "count": 1,
+  "recipients": ["email@example.com"],
+  "subject": "Custom Email Subject",
+  "body": "Custom email body text",
+  "display_name": "John Doe",
+  "attachment_type": ".zip"
+}
+```
+
+**Parameters**:
+- `count` (number): Number of emails to send
+- `recipients` (array): List of recipient email addresses
+- `subject` (string, required): Email subject line
+- `body` (string, required): Email body text
+- `display_name` (string, optional): Sender display name
+- `attachment_type` (string, optional): Attachment file extension - one of: `.zip`, `.com`, `.scr`, `.pdf`, `.bat`, or `null` for no attachment
 
 ### Test Endpoints
 
@@ -210,6 +252,16 @@ The application supports the following email providers:
 | Office365 | outlook.office365.com | 993 | smtp.office365.com | 587 | TLS |
 | AOL | imap.aol.com | 993 | smtp.aol.com | 465 | SSL |
 
+> **Gmail-specific behavior**
+> - Gmail requires an **app-specific password** generated in Google Account → Security → App Passwords before IMAP/SMTP access will succeed.
+> - With that credential, Gmail can successfully deliver phishing URL tests and GTUBE spam-test emails from this application.
+> - Gmail currently blocks EICAR and Cynic payloads during outbound scanning, so those templates will fail when attempting to send via Gmail.
+
+> **Yahoo-specific behavior**
+> - Yahoo requires an **app-specific password** generated in Yahoo Account → Account Security → Generate app password before IMAP/SMTP access will succeed. Without it, connections will fail with "Connection unexpectedly closed" errors.
+> - With that credential, Yahoo can successfully deliver phishing URL tests and GTUBE spam-test emails from this application.
+> - Yahoo may block EICAR and Cynic payloads during outbound scanning similar to Gmail, so those templates may fail when attempting to send via Yahoo.
+
 ### Provider Auto-Detection
 
 The backend automatically detects the email provider from the IMAP server address and configures the appropriate SMTP server settings.
@@ -233,6 +285,8 @@ EICAR (European Institute for Computer Antivirus Research) test files are standa
 - Standard EICAR test file attachment
 - Recognized by all major antivirus software
 - Safe for testing
+- Gmail-specific note: Google actively blocks outbound delivery of the EICAR attachment, so EICAR sends via Gmail will fail even with an app-specific password.
+- Yahoo-specific note: Yahoo may block outbound delivery of the EICAR attachment similar to Gmail, so EICAR sends via Yahoo may fail even with an app-specific password.
 
 ### Cynic Test Emails
 
@@ -242,8 +296,42 @@ Cynic test emails contain password-protected VBS archives. These test emails are
 - Password-protected 7z archives
 - VBS script attachments
 - Requires 7z command-line tool or py7zr library
+- Gmail-specific note: Google currently rejects the Cynic payload during outbound scanning, so Cynic sends via Gmail will fail.
+- Yahoo-specific note: Yahoo may reject the Cynic payload during outbound scanning similar to Gmail, so Cynic sends via Yahoo may fail.
+
+### GTUBE Spam-Test Emails
+
+GTUBE (Generic Test for Unsolicited Bulk Email) is a standard 68-byte string recognized by many anti-spam engines (see [GTUBE specification](https://en.wikipedia.org/wiki/GTUBE)). Sending this string inside an email body should reliably trigger spam filtering without sending malicious content.
+
+**Features**:
+- Standard GTUBE test string in email body
+- Single email per send operation
+- Recognized by SpamAssassin and other anti-spam systems
+
+### Custom Emails
+
+Custom emails allow full control over email content and appearance for flexible testing scenarios.
+
+**Features**:
+- Configurable subject line (required)
+- Configurable body text (required)
+- Optional sender display name (appears as "Display Name <email@example.com>")
+- Optional harmless dummy attachments:
+  - `.zip`: Minimal ZIP archive
+  - `.com`: Text file with .com extension
+  - `.scr`: Text file with .scr extension
+  - `.pdf`: Minimal valid PDF document
+  - `.bat`: Harmless batch script file
+- Multiple recipients support
+- Configurable email count
 
 ## Configuration
+
+> **⚠️ STRONGLY RECOMMENDED: GMX Email Account**
+> 
+> We strongly recommend using a GMX email account for this application. GMX server settings have been thoroughly tested and verified to work reliably. All other email provider settings are still in development and may require additional configuration or troubleshooting.
+> 
+> To create a free GMX account, visit https://www.gmx.com/
 
 ### Configuration File Location
 
@@ -279,7 +367,8 @@ Configuration is stored in: `data/config.json`
     "subject_templates": {
       "phishing": "Warning - Potentially Hazardous URL",
       "eicar": "EICAR Test File",
-      "cynic": "This is a important top secret email!"
+        "cynic": "This is a important top secret email!",
+        "gtube": "GTUBE Spam Test Email"
     }
   },
   "history": []
@@ -300,9 +389,12 @@ The application supports `.env` file for environment-specific configuration (via
    - Click "Send Phishing Emails" for phishing tests
    - Click "Send EICAR Emails" for antivirus tests
    - Click "Send Cynic Emails" for advanced tests
+   - Click "Send GTUBE Email" for spam filter tests
+   - Click "Send Custom Email" for fully customizable emails
+   - Click "Send GTUBE Email" to send the canonical GTUBE spam-test string (single message)
 
 3. **Enter Details**:
-   - Number of emails to send
+   - Number of emails to send (GTUBE is fixed to a single message)
    - Recipient email addresses (comma-separated)
 
 4. **Review Results**:
@@ -315,9 +407,15 @@ The application supports `.env` file for environment-specific configuration (via
 1. **Navigate to Configuration**: http://localhost:5000/config
 
 2. **Configure Email Provider**:
-   - Select provider from dropdown
-   - Enter username and password
-   - Verify server settings are correct
+   - **⚠️ STRONGLY RECOMMENDED: Select GMX** from the dropdown (pre-selected by default)
+   - GMX settings have been tested and verified to work
+   - Enter your GMX email address as username
+   - Enter your GMX account password
+   - Server settings will auto-populate for GMX:
+     - IMAP: `imap.gmx.com:993`
+     - SMTP: `mail.gmx.com:587`
+   
+   **Note**: Other providers (Gmail, Yahoo, etc.) are still in development and may require troubleshooting.
 
 3. **Test Configuration**:
    - Click "Test Email Configuration"

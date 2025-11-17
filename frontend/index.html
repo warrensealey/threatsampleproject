@@ -34,6 +34,16 @@
                     <p>Send Cynic test emails with password-protected VBS archives.</p>
                     <button class="btn btn-danger" id="sendCynicBtn">Send Cynic Emails</button>
                 </div>
+                <div>
+                    <h3>GTUBE Spam Test</h3>
+                    <p>Send a single GTUBE spam-test email containing the canonical GTUBE string.</p>
+                    <button class="btn btn-warning" id="sendGtubeBtn">Send GTUBE Email</button>
+                </div>
+                <div>
+                    <h3>Custom Email</h3>
+                    <p>Send custom emails with configurable subject, body, display name, and optional attachments.</p>
+                    <button class="btn btn-primary" id="sendCustomBtn">Send Custom Email</button>
+                </div>
             </div>
             <div id="sendStatus" class="hidden"></div>
         </div>
@@ -61,6 +71,53 @@
             <div id="emailSendActions" class="hidden">
                 <button class="btn btn-primary" id="closeEmailSendModalBtn">Close</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Custom Email Modal -->
+    <div id="customEmailModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 700px;">
+            <span class="modal-close" id="customEmailModalClose">&times;</span>
+            <h2>Send Custom Email</h2>
+            <form id="customEmailForm">
+                <div class="form-group">
+                    <label for="customSubject">Subject: <span style="color: red;">*</span></label>
+                    <input type="text" id="customSubject" required placeholder="Enter email subject">
+                </div>
+                <div class="form-group">
+                    <label for="customBody">Body: <span style="color: red;">*</span></label>
+                    <textarea id="customBody" required rows="6" placeholder="Enter email body text"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="customDisplayName">Sender Display Name (optional):</label>
+                    <input type="text" id="customDisplayName" placeholder="e.g., John Doe">
+                    <small style="color: #666; display: block; margin-top: 5px;">How the sender name will appear to recipients</small>
+                </div>
+                <div class="form-group">
+                    <label for="customAttachment">Attachment (optional):</label>
+                    <select id="customAttachment" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">None</option>
+                        <option value=".zip">.zip (ZIP Archive)</option>
+                        <option value=".com">.com (Executable-like)</option>
+                        <option value=".scr">.scr (Screen Saver-like)</option>
+                        <option value=".pdf">.pdf (PDF Document)</option>
+                        <option value=".bat">.bat (Batch Script)</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">Select a harmless dummy attachment file type</small>
+                </div>
+                <div class="form-group">
+                    <label for="customRecipients">Recipients: <span style="color: red;">*</span></label>
+                    <input type="text" id="customRecipients" required placeholder="email1@example.com, email2@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="customCount">Count:</label>
+                    <input type="number" id="customCount" value="1" min="1" style="width: 100px;">
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Send Email</button>
+                    <button type="button" class="btn btn-secondary" id="cancelCustomEmailBtn">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 

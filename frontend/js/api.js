@@ -47,14 +47,36 @@ class APIClient {
     }
 
     // Email client configuration
-    async getEmailClientConfig() {
-        return this.request('/email/config');
+    async getEmailClientConfig(name = null) {
+        const endpoint = name ? `/email/config?name=${encodeURIComponent(name)}` : '/email/config';
+        return this.request(endpoint);
     }
 
     async updateEmailClientConfig(config) {
         return this.request('/email/config', {
             method: 'POST',
             body: config
+        });
+    }
+
+    async getAllEmailClientConfigs() {
+        return this.request('/email/configs');
+    }
+
+    async deleteEmailClientConfig(name) {
+        return this.request(`/email/config/${encodeURIComponent(name)}`, {
+            method: 'DELETE'
+        });
+    }
+
+    async getCurrentEmailClient() {
+        return this.request('/email/config/current');
+    }
+
+    async setCurrentEmailClient(name) {
+        return this.request('/email/config/current', {
+            method: 'POST',
+            body: { name }
         });
     }
 
@@ -80,6 +102,20 @@ class APIClient {
         });
     }
 
+    async sendGtube(count, recipients) {
+        return this.request('/send/gtube', {
+            method: 'POST',
+            body: { count, recipients }
+        });
+    }
+
+    async sendCustom(count, recipients, subject, body, displayName, attachmentType) {
+        return this.request('/send/custom', {
+            method: 'POST',
+            body: { count, recipients, subject, body, display_name: displayName, attachment_type: attachmentType }
+        });
+    }
+
     // History
     async getHistory() {
         return this.request('/history');
@@ -93,16 +129,6 @@ class APIClient {
         });
     }
 
-    // Mutt status and installation
-    async getMuttStatus() {
-        return this.request('/mutt/status');
-    }
-
-    async installMutt() {
-        return this.request('/mutt/install', {
-            method: 'POST'
-        });
-    }
 }
 
 const api = new APIClient();

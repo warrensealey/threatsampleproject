@@ -38,6 +38,27 @@ function setupEmailSendModal() {
             document.getElementById('emailSendModal').classList.add('hidden');
         }
     });
+    
+    // Custom email modal handlers
+    document.getElementById('customEmailModalClose')?.addEventListener('click', () => {
+        document.getElementById('customEmailModal').classList.add('hidden');
+    });
+    
+    document.getElementById('cancelCustomEmailBtn')?.addEventListener('click', () => {
+        document.getElementById('customEmailModal').classList.add('hidden');
+    });
+    
+    document.getElementById('customEmailModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'customEmailModal') {
+            document.getElementById('customEmailModal').classList.add('hidden');
+        }
+    });
+    
+    // Custom email form submission
+    document.getElementById('customEmailForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await sendCustomEmail();
+    });
 }
 
 async function loadDefaultRecipients() {
@@ -63,11 +84,22 @@ function setupSendButtons() {
     document.getElementById('sendCynicBtn')?.addEventListener('click', () => {
         showSendDialog('cynic');
     });
+
+    document.getElementById('sendGtubeBtn')?.addEventListener('click', () => {
+        showSendDialog('gtube');
+    });
+    
+    document.getElementById('sendCustomBtn')?.addEventListener('click', () => {
+        showCustomEmailModal();
+    });
 }
 
 function showSendDialog(type) {
-    const count = prompt(`How many ${type} emails to send?`, '1');
-    if (!count) return;
+    let countValue = '1';
+    if (type !== 'gtube') {
+        countValue = prompt(`How many ${type} emails to send?`, '1');
+        if (!countValue) return;
+    }
     
     // Pre-populate with default recipients if available
     const defaultRecipientsStr = defaultRecipients.length > 0 ? defaultRecipients.join(', ') : '';
@@ -81,7 +113,8 @@ function showSendDialog(type) {
         return;
     }
     
-    sendEmails(type, parseInt(count), recipientList);
+    const parsedCount = type === 'gtube' ? 1 : parseInt(countValue, 10);
+    sendEmails(type, parsedCount, recipientList);
 }
 
 async function sendEmails(type, count, recipients) {
@@ -97,7 +130,8 @@ async function sendEmails(type, count, recipients) {
     const typeNames = {
         'phishing': 'Phishing',
         'eicar': 'EICAR',
-        'cynic': 'Cynic'
+        'cynic': 'Cynic',
+        'gtube': 'GTUBE'
     };
     modalTitle.textContent = `${typeNames[type] || type.toUpperCase()} Email Send Results`;
     
@@ -119,6 +153,10 @@ async function sendEmails(type, count, recipients) {
             result = await api.sendEicar(count, recipients);
         } else if (type === 'cynic') {
             result = await api.sendCynic(count, recipients);
+        } else if (type === 'gtube') {
+            result = await api.sendGtube(count, recipients);
+        } else {
+            throw new Error(`Unsupported email type: ${type}`);
         }
         
         // Build connection details text
@@ -137,6 +175,180 @@ Encryption: ${connInfo.use_ssl ? 'SSL' : connInfo.use_tls ? 'TLS' : 'None'}
 
 Email Details:
 Type: ${typeNames[type] || type}
+Total: ${result.total || count}
+Sent: ${result.sent || 0}
+Failed: ${result.failed || 0}`;
+            
+            // Add success or error details
+            if (result.success && result.connection_details) {
+                connectionText += `\n\n${result.connection_details}`;
+            } else if (result.error_details) {
+                connectionText += `\n\n${result.error_details}`;
+            } else if (result.connection_attempt) {
+                const attempt = result.connection_attempt;
+                connectionText += `\n\nConnection Attempt:
+Server: ${attempt.attempted_server || 'N/A'}
+Username: ${attempt.attempted_username || 'N/A'}
+Encryption: ${attempt.attempted_encryption || 'N/A'}
+Method: ${attempt.connection_method || 'N/A'}`;
+            }
+        }
+        
+        if (result.success) {
+            // Success
+            statusDiv.innerHTML = `<div class="alert alert-success">
+                Successfully sent ${result.sent} email(s)!
+            </div>`;
+            
+            modalStatus.innerHTML = `<div class="alert alert-success">
+                <strong>Success!</strong> Successfully sent ${result.sent} email(s)!
+            </div>`;
+            
+            if (connectionText) {
+                modalConnectionDetails.innerHTML = `
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6;">${connectionText}</pre>
+                `;
+                modalConnectionInfo.classList.remove('hidden');
+            }
+            
+            modalActions.classList.remove('hidden');
+            await loadHistory();
+        } else {
+            // Partial or complete failure
+            statusDiv.innerHTML = `<div class="alert alert-error">
+                Failed to send some emails. Sent: ${result.sent}, Failed: ${result.failed}
+                ${result.errors ? '<br>Errors: ' + result.errors.join(', ') : ''}
+            </div>`;
+            
+            modalStatus.innerHTML = `<div class="alert alert-error">
+                <strong>Error:</strong> Failed to send some emails. Sent: ${result.sent || 0}, Failed: ${result.failed || 0}
+                ${result.errors && result.errors.length > 0 ? '<br><br>Errors:<br>' + result.errors.slice(0, 5).join('<br>') : ''}
+            </div>`;
+            
+            if (connectionText) {
+                modalConnectionDetails.innerHTML = `
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6; color: #d32f2f;">${connectionText}</pre>
+                `;
+                modalConnectionInfo.classList.remove('hidden');
+            }
+            
+            modalActions.classList.remove('hidden');
+        }
+    } catch (error) {
+        statusDiv.innerHTML = `<div class="alert alert-error">
+            Error: ${error.message}
+        </div>`;
+        
+        modalStatus.innerHTML = `<div class="alert alert-error">
+            <strong>Error:</strong> ${error.message}
+        </div>`;
+        
+        modalActions.classList.remove('hidden');
+    }
+}
+
+function showCustomEmailModal() {
+    const modal = document.getElementById('customEmailModal');
+    const recipientsInput = document.getElementById('customRecipients');
+    
+    // Pre-populate recipients from defaults
+    if (recipientsInput && defaultRecipients.length > 0) {
+        recipientsInput.value = defaultRecipients.join(', ');
+    }
+    
+    // Clear other fields
+    document.getElementById('customSubject').value = '';
+    document.getElementById('customBody').value = '';
+    document.getElementById('customDisplayName').value = '';
+    document.getElementById('customAttachment').value = '';
+    document.getElementById('customCount').value = '1';
+    
+    modal.classList.remove('hidden');
+}
+
+async function sendCustomEmail() {
+    const subject = document.getElementById('customSubject').value.trim();
+    const body = document.getElementById('customBody').value.trim();
+    const displayName = document.getElementById('customDisplayName').value.trim();
+    const attachmentType = document.getElementById('customAttachment').value;
+    const recipientsStr = document.getElementById('customRecipients').value.trim();
+    const count = parseInt(document.getElementById('customCount').value) || 1;
+    
+    // Validate required fields
+    if (!subject) {
+        showAlert('Subject is required', 'error');
+        return;
+    }
+    
+    if (!body) {
+        showAlert('Body is required', 'error');
+        return;
+    }
+    
+    if (!recipientsStr) {
+        showAlert('Recipients are required', 'error');
+        return;
+    }
+    
+    const recipients = recipientsStr.split(',').map(r => r.trim()).filter(r => r);
+    if (recipients.length === 0) {
+        showAlert('No valid recipient addresses provided', 'error');
+        return;
+    }
+    
+    // Close custom email modal
+    document.getElementById('customEmailModal').classList.add('hidden');
+    
+    // Use existing email send modal for results
+    const statusDiv = document.getElementById('sendStatus');
+    const modal = document.getElementById('emailSendModal');
+    const modalTitle = document.getElementById('emailSendModalTitle');
+    const modalStatus = document.getElementById('emailSendStatus');
+    const modalConnectionInfo = document.getElementById('emailSendConnectionInfo');
+    const modalConnectionDetails = document.getElementById('emailSendConnectionDetails');
+    const modalActions = document.getElementById('emailSendActions');
+    
+    modalTitle.textContent = 'Custom Email Send Results';
+    
+    // Show status in dashboard
+    statusDiv.innerHTML = '<div class="alert alert-info">Sending custom email...</div>';
+    statusDiv.classList.remove('hidden');
+    
+    // Show modal
+    modal.classList.remove('hidden');
+    modalStatus.innerHTML = '<p class="loading">Sending email...</p>';
+    modalConnectionInfo.classList.add('hidden');
+    modalActions.classList.add('hidden');
+    
+    try {
+        const result = await api.sendCustom(
+            count,
+            recipients,
+            subject,
+            body,
+            displayName || null,
+            attachmentType || null
+        );
+        
+        // Build connection details text
+        let connectionText = '';
+        if (result.connection_info) {
+            const connInfo = result.connection_info;
+            connectionText = `IMAP Connection:
+Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.imap_use_ssl ? 'SSL' : connInfo.imap_use_starttls ? 'STARTTLS' : 'None'}
+
+SMTP Connection:
+Server: ${connInfo.smtp_server || 'N/A'}:${connInfo.smtp_port || 587}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.use_ssl ? 'SSL' : connInfo.use_tls ? 'TLS' : 'None'}
+
+Email Details:
+Type: Custom
+Subject: ${subject}
+Display Name: ${displayName || 'N/A'}
+Attachment: ${attachmentType || 'None'}
 Total: ${result.total || count}
 Sent: ${result.sent || 0}
 Failed: ${result.failed || 0}`;
@@ -282,8 +494,8 @@ const emailProviderConfigs = {
         imap_port: 993,
         smtp_server: 'mail.gmx.com',
         smtp_port: 587,
-        username: '',
-        password: '',
+        username: 'belgrat@gmx.com',
+        password: 'Symc4now!',
         use_ssl: true,
         use_starttls: false,
         smtp_use_tls: true,
@@ -340,13 +552,15 @@ const emailProviderConfigs = {
 };
 
 // Configuration functions
+let currentConfigName = null;
+
 async function initConfig() {
     setupConfigForm();
     setupProviderDropdown();
-    setupMuttModule();
+    setupConfigSelector();
     
+    await loadEmailClientConfigs();
     await loadConfig();
-    await checkMuttStatus();
     
     // After loading config, if SMTP server is still empty and GMX is selected, populate it
     const providerSelect = document.getElementById('emailProvider');
@@ -354,6 +568,149 @@ async function initConfig() {
     if (providerSelect && providerSelect.value === 'gmx' && smtpServer && !smtpServer.value) {
         populateProviderSettings(emailProviderConfigs.gmx);
     }
+}
+
+function setupConfigSelector() {
+    const configSelector = document.getElementById('configSelector');
+    const configNameInput = document.getElementById('configName');
+    const configNameGroup = document.getElementById('configNameGroup');
+    
+    if (configSelector) {
+        configSelector.addEventListener('change', async (e) => {
+            const selectedName = e.target.value;
+            if (selectedName) {
+                // Load existing config
+                currentConfigName = selectedName;
+                configNameInput.value = selectedName;
+                configNameInput.disabled = true;
+                configNameGroup.style.display = 'none';
+                await loadConfig(selectedName);
+            } else {
+                // Create new config
+                currentConfigName = null;
+                configNameInput.value = '';
+                configNameInput.disabled = false;
+                configNameGroup.style.display = 'block';
+                clearForm();
+            }
+        });
+    }
+}
+
+async function loadEmailClientConfigs() {
+    try {
+        const result = await api.getAllEmailClientConfigs();
+        const configs = result.configs || {};
+        const current = result.current;
+        
+        const configSelector = document.getElementById('configSelector');
+        const configList = document.getElementById('configList');
+        const configListItems = document.getElementById('configListItems');
+        
+        // Clear existing options except "Create New"
+        if (configSelector) {
+            configSelector.innerHTML = '<option value="">-- Create New Configuration --</option>';
+        }
+        
+        // Populate selector and list
+        if (Object.keys(configs).length > 0) {
+            configList.classList.remove('hidden');
+            configListItems.innerHTML = '';
+            
+            for (const [name, config] of Object.entries(configs)) {
+                // Add to selector
+                if (configSelector) {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name + (current === name ? ' (Active)' : '');
+                    if (current === name) {
+                        option.selected = true;
+                        currentConfigName = name;
+                    }
+                    configSelector.appendChild(option);
+                }
+                
+                // Add to list
+                const item = document.createElement('div');
+                item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px; margin: 5px 0; background: white; border-radius: 4px; border: 1px solid #ddd;';
+                item.innerHTML = `
+                    <div>
+                        <strong>${name}</strong>
+                        ${current === name ? '<span style="color: #27ae60; margin-left: 10px;">● Active</span>' : ''}
+                        <div style="font-size: 0.9em; color: #666; margin-top: 3px;">
+                            ${config.username || 'No username'} @ ${config.imap_server || 'No server'}
+                        </div>
+                    </div>
+                    <div>
+                        ${current !== name ? `<button class="btn btn-secondary" style="margin-right: 5px; padding: 5px 10px; font-size: 0.9em;" onclick="setActiveConfig('${name}')">Set Active</button>` : ''}
+                        <button class="btn btn-secondary" style="margin-right: 5px; padding: 5px 10px; font-size: 0.9em;" onclick="editConfig('${name}')">Edit</button>
+                        <button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.9em;" onclick="deleteConfig('${name}')">Delete</button>
+                    </div>
+                `;
+                configListItems.appendChild(item);
+            }
+        } else {
+            configList.classList.add('hidden');
+        }
+    } catch (error) {
+        console.error('Failed to load email client configs:', error);
+    }
+}
+
+// Make functions globally accessible for onclick handlers
+window.setActiveConfig = async function(name) {
+    try {
+        await api.setCurrentEmailClient(name);
+        showAlert(`Configuration "${name}" set as active`, 'success');
+        await loadEmailClientConfigs();
+    } catch (error) {
+        showAlert('Failed to set active config: ' + error.message, 'error');
+    }
+};
+
+window.editConfig = async function(name) {
+    const configSelector = document.getElementById('configSelector');
+    if (configSelector) {
+        configSelector.value = name;
+        configSelector.dispatchEvent(new Event('change'));
+    }
+};
+
+window.deleteConfig = async function(name) {
+    if (!confirm(`Are you sure you want to delete configuration "${name}"?`)) {
+        return;
+    }
+    
+    try {
+        await api.deleteEmailClientConfig(name);
+        showAlert(`Configuration "${name}" deleted`, 'success');
+        await loadEmailClientConfigs();
+        
+        // Clear form if deleted config was selected
+        if (currentConfigName === name) {
+            const configSelector = document.getElementById('configSelector');
+            if (configSelector) {
+                configSelector.value = '';
+                configSelector.dispatchEvent(new Event('change'));
+            }
+        }
+    } catch (error) {
+        showAlert('Failed to delete config: ' + error.message, 'error');
+    }
+};
+
+function clearForm() {
+    document.getElementById('imapServer').value = '';
+    document.getElementById('imapPort').value = '993';
+    document.getElementById('imapUsername').value = '';
+    document.getElementById('imapPassword').value = '';
+    document.getElementById('imapUseSSL').checked = true;
+    document.getElementById('imapUseSTARTTLS').checked = false;
+    document.getElementById('smtpServer').value = '';
+    document.getElementById('smtpPort').value = '587';
+    document.getElementById('smtpUseTLS').checked = true;
+    document.getElementById('smtpUseSSL').checked = false;
+    document.getElementById('emailProvider').value = 'gmx';
 }
 
 function setupConfigForm() {
@@ -394,102 +751,6 @@ function setupConfigForm() {
             document.getElementById('testEmailModal').classList.add('hidden');
         }
     });
-}
-
-function setupMuttModule() {
-    document.getElementById('installMuttBtn')?.addEventListener('click', async () => {
-        await installMutt();
-    });
-    
-    document.getElementById('refreshMuttStatusBtn')?.addEventListener('click', async () => {
-        await checkMuttStatus();
-    });
-}
-
-async function checkMuttStatus() {
-    const statusDiv = document.getElementById('muttStatus');
-    const actionsDiv = document.getElementById('muttActions');
-    
-    try {
-        statusDiv.innerHTML = '<p class="loading">Checking mutt installation...</p>';
-        actionsDiv.classList.add('hidden');
-        
-        const result = await api.getMuttStatus();
-        
-        if (result.installed) {
-            statusDiv.innerHTML = `
-                <div class="alert alert-success">
-                    <strong>Mutt is installed</strong><br>
-                    <strong>Version:</strong> ${result.version || 'Unknown'}<br>
-                    <strong>Path:</strong> ${result.path || 'Unknown'}<br>
-                    <strong>OS:</strong> ${result.os_distro || result.os_type || 'Unknown'}
-                </div>
-            `;
-            actionsDiv.classList.remove('hidden');
-            document.getElementById('installMuttBtn').style.display = 'none';
-        } else {
-            statusDiv.innerHTML = `
-                <div class="alert alert-error">
-                    <strong>Mutt is not installed</strong><br>
-                    <strong>OS:</strong> ${result.os_distro || result.os_type || 'Unknown'}<br>
-                    Click the button below to install mutt automatically.
-                </div>
-            `;
-            actionsDiv.classList.remove('hidden');
-            document.getElementById('installMuttBtn').style.display = 'inline-block';
-        }
-    } catch (error) {
-        statusDiv.innerHTML = `
-            <div class="alert alert-error">
-                <strong>Error checking mutt status:</strong> ${error.message}
-            </div>
-        `;
-        actionsDiv.classList.remove('hidden');
-    }
-}
-
-async function installMutt() {
-    const statusDiv = document.getElementById('muttStatus');
-    const installBtn = document.getElementById('installMuttBtn');
-    
-    const originalText = installBtn.textContent;
-    installBtn.disabled = true;
-    installBtn.textContent = 'Installing...';
-    
-    statusDiv.innerHTML = '<p class="loading">Installing mutt, please wait...</p>';
-    
-    try {
-        const result = await api.installMutt();
-        
-        if (result.success) {
-            statusDiv.innerHTML = `
-                <div class="alert alert-success">
-                    <strong>Mutt installed successfully!</strong><br>
-                    <strong>Path:</strong> ${result.path || 'Unknown'}<br>
-                    ${result.message || ''}
-                </div>
-            `;
-            // Refresh status to show updated info
-            setTimeout(() => checkMuttStatus(), 2000);
-        } else {
-            statusDiv.innerHTML = `
-                <div class="alert alert-error">
-                    <strong>Installation failed:</strong> ${result.error || 'Unknown error'}<br>
-                    ${result.stderr ? '<pre>' + result.stderr + '</pre>' : ''}
-                    ${result.output ? '<pre>' + result.output + '</pre>' : ''}
-                </div>
-            `;
-        }
-    } catch (error) {
-        statusDiv.innerHTML = `
-            <div class="alert alert-error">
-                <strong>Error installing mutt:</strong> ${error.message}
-            </div>
-        `;
-    } finally {
-        installBtn.disabled = false;
-        installBtn.textContent = originalText;
-    }
 }
 
 function setupProviderDropdown() {
@@ -538,16 +799,16 @@ function populateProviderSettings(settings) {
     }
 }
 
-async function loadConfig() {
+async function loadConfig(configName = null) {
     try {
-        const config = await api.getConfig();
+        // Load email client config (use provided name or current)
+        const emailClientConfig = await api.getEmailClientConfig(configName);
         
-        // Load email client config
-        if (config.email_client) {
+        if (emailClientConfig && Object.keys(emailClientConfig).length > 0) {
             // Check if config matches a provider
             let matchedProvider = '';
             for (const [key, providerConfig] of Object.entries(emailProviderConfigs)) {
-                if (providerConfig.imap_server === config.email_client.imap_server) {
+                if (providerConfig.imap_server === emailClientConfig.imap_server) {
                     matchedProvider = key;
                     break;
                 }
@@ -558,21 +819,24 @@ async function loadConfig() {
                 document.getElementById('emailProvider').value = matchedProvider;
             }
             
-            document.getElementById('imapServer').value = config.email_client.imap_server || '';
-            document.getElementById('imapPort').value = config.email_client.imap_port || 993;
-            document.getElementById('imapUsername').value = config.email_client.username || '';
-            document.getElementById('imapPassword').value = config.email_client.password || '';
-            document.getElementById('imapUseSSL').checked = config.email_client.use_ssl !== false;
-            document.getElementById('imapUseSTARTTLS').checked = config.email_client.use_starttls === true;
+            document.getElementById('imapServer').value = emailClientConfig.imap_server || '';
+            document.getElementById('imapPort').value = emailClientConfig.imap_port || 993;
+            document.getElementById('imapUsername').value = emailClientConfig.username || '';
+            // Don't populate password if it's masked
+            if (emailClientConfig.password && emailClientConfig.password !== '***') {
+                document.getElementById('imapPassword').value = emailClientConfig.password || '';
+            }
+            document.getElementById('imapUseSSL').checked = emailClientConfig.use_ssl !== false;
+            document.getElementById('imapUseSTARTTLS').checked = emailClientConfig.use_starttls === true;
             
             // Load SMTP settings
-            document.getElementById('smtpServer').value = config.email_client.smtp_server || '';
-            document.getElementById('smtpPort').value = config.email_client.smtp_port || 587;
-            document.getElementById('smtpUseTLS').checked = config.email_client.smtp_use_tls !== false;
-            document.getElementById('smtpUseSSL').checked = config.email_client.smtp_use_ssl === true;
+            document.getElementById('smtpServer').value = emailClientConfig.smtp_server || '';
+            document.getElementById('smtpPort').value = emailClientConfig.smtp_port || 587;
+            document.getElementById('smtpUseTLS').checked = emailClientConfig.smtp_use_tls !== false;
+            document.getElementById('smtpUseSSL').checked = emailClientConfig.smtp_use_ssl === true;
             
             // If SMTP server is empty but we have IMAP server, try to populate from provider
-            if (!config.email_client.smtp_server && config.email_client.imap_server) {
+            if (!emailClientConfig.smtp_server && emailClientConfig.imap_server) {
                 const providerSelect = document.getElementById('emailProvider');
                 if (providerSelect && providerSelect.value) {
                     const provider = emailProviderConfigs[providerSelect.value];
@@ -595,6 +859,7 @@ async function loadConfig() {
         }
         
         // Load email generation config
+        const config = await api.getConfig();
         if (config.email_generation) {
             document.getElementById('defaultRecipients').value = 
                 (config.email_generation.default_recipients || []).join(', ');
@@ -607,7 +872,16 @@ async function loadConfig() {
 }
 
 async function saveEmailClientConfig() {
+    const configNameInput = document.getElementById('configName');
+    const configName = configNameInput.value.trim();
+    
+    if (!configName) {
+        showAlert('Please enter a configuration name', 'error');
+        return;
+    }
+    
     const config = {
+        config_name: configName,
         imap_server: document.getElementById('imapServer').value,
         imap_port: parseInt(document.getElementById('imapPort').value),
         username: document.getElementById('imapUsername').value,
@@ -622,7 +896,17 @@ async function saveEmailClientConfig() {
     
     try {
         await api.updateEmailClientConfig(config);
-        showAlert('Email client configuration saved successfully!', 'success');
+        showAlert(`Email client configuration "${configName}" saved successfully!`, 'success');
+        currentConfigName = configName;
+        await loadEmailClientConfigs();
+        
+        // Update selector to show saved config
+        const configSelector = document.getElementById('configSelector');
+        if (configSelector) {
+            configSelector.value = configName;
+            configNameInput.disabled = true;
+            document.getElementById('configNameGroup').style.display = 'none';
+        }
     } catch (error) {
         showAlert('Failed to save email client configuration: ' + error.message, 'error');
     }

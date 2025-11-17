@@ -5,7 +5,9 @@ from flask import Blueprint, request, jsonify
 from backend.config import (
     load_config, save_config, get_smtp_config, get_email_client_config,
     get_email_generation_config, update_smtp_config, update_email_client_config,
-    update_email_generation_config, get_history
+    update_email_generation_config, get_history, get_all_email_client_configs,
+    save_email_client_config, delete_email_client_config, set_current_email_client,
+    get_current_email_client_name
 )
 from backend.email_generator import EmailGenerator
 import logging
@@ -56,9 +58,14 @@ def update_config():
 
 @api.route('/email/config', methods=['GET'])
 def get_email_client_config_route():
-    """Get email client configuration."""
+    """Get email client configuration.
+    
+    Query parameters:
+        name: Optional config name. If not provided, returns current active config.
+    """
     try:
-        config = get_email_client_config()
+        config_name = request.args.get('name', None)
+        config = get_email_client_config(config_name)
         # Don't return password
         safe_config = config.copy()
         if 'password' in safe_config:
@@ -71,13 +78,90 @@ def get_email_client_config_route():
 
 @api.route('/email/config', methods=['POST'])
 def update_email_client_config_route():
-    """Update email client configuration."""
+    """Update email client configuration.
+    
+    Request body must include:
+        config_name: Name/ID for this configuration
+        ... (other email client config fields)
+    """
     try:
         data = request.json
-        update_email_client_config(data)
-        return jsonify({"success": True})
+        config_name = data.get('config_name')
+        
+        if not config_name:
+            return jsonify({"error": "config_name is required"}), 400
+        
+        # Remove config_name from data before saving
+        config_data = {k: v for k, v in data.items() if k != 'config_name'}
+        
+        save_email_client_config(config_name, config_data)
+        return jsonify({"success": True, "config_name": config_name})
     except Exception as e:
         logger.error(f"Error updating email client config: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route('/email/configs', methods=['GET'])
+def get_all_email_client_configs_route():
+    """Get all email client configurations (names and metadata, no passwords)."""
+    try:
+        configs = get_all_email_client_configs()
+        current = get_current_email_client_name()
+        return jsonify({
+            "configs": configs,
+            "current": current
+        })
+    except Exception as e:
+        logger.error(f"Error getting all email client configs: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route('/email/config/<config_name>', methods=['DELETE'])
+def delete_email_client_config_route(config_name):
+    """Delete an email client configuration."""
+    try:
+        success = delete_email_client_config(config_name)
+        if success:
+            return jsonify({"success": True})
+        else:
+            return jsonify({"error": "Configuration not found"}), 404
+    except Exception as e:
+        logger.error(f"Error deleting email client config: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route('/email/config/current', methods=['GET'])
+def get_current_email_client_route():
+    """Get the name of the current active email client configuration."""
+    try:
+        current = get_current_email_client_name()
+        return jsonify({"current": current})
+    except Exception as e:
+        logger.error(f"Error getting current email client: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route('/email/config/current', methods=['POST'])
+def set_current_email_client_route():
+    """Set the current active email client configuration.
+    
+    Request body:
+        {"name": "<config_name>"}
+    """
+    try:
+        data = request.json
+        config_name = data.get('name')
+        
+        if not config_name:
+            return jsonify({"error": "name is required"}), 400
+        
+        success = set_current_email_client(config_name)
+        if success:
+            return jsonify({"success": True, "current": config_name})
+        else:
+            return jsonify({"error": "Configuration not found"}), 404
+    except Exception as e:
+        logger.error(f"Error setting current email client: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -136,163 +220,60 @@ def send_cynic():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/mutt/status', methods=['GET'])
-def get_mutt_status():
-    """Check if mutt is installed and get version information."""
+@api.route('/send/gtube', methods=['POST'])
+def send_gtube():
+    """Send GTUBE spam-test emails."""
     try:
-        import subprocess
-        import platform
+        data = request.json
+        count = data.get('count', 1)
+        recipients = data.get('recipients', [])
         
-        # Check if mutt is installed
-        result = subprocess.run(
-            ['which', 'mutt'],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
+        if not recipients:
+            return jsonify({"error": "No recipients specified"}), 400
         
-        installed = result.returncode == 0
-        mutt_path = result.stdout.strip() if installed else None
-        version = None
-        
-        if installed:
-            # Get mutt version
-            try:
-                version_result = subprocess.run(
-                    ['mutt', '-v'],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                if version_result.returncode == 0:
-                    # Extract version from output (first line usually contains version)
-                    version = version_result.stdout.split('\n')[0].strip()
-            except:
-                version = "Unknown version"
-        
-        # Detect OS
-        os_type = platform.system().lower()
-        os_distro = "unknown"
-        
-        if os_type == "linux":
-            try:
-                # Try to detect distribution
-                with open('/etc/os-release', 'r') as f:
-                    for line in f:
-                        if line.startswith('ID='):
-                            os_distro = line.split('=')[1].strip().strip('"')
-                            break
-            except:
-                os_distro = "linux"
-        elif os_type == "darwin":
-            os_distro = "macos"
-        
-        return jsonify({
-            "installed": installed,
-            "path": mutt_path,
-            "version": version,
-            "os_type": os_type,
-            "os_distro": os_distro
-        })
+        result = email_generator.send_gtube_emails(count, recipients)
+        return jsonify(result)
     except Exception as e:
-        logger.error(f"Error checking mutt status: {e}")
+        logger.error(f"Error sending GTUBE emails: {e}")
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/mutt/install', methods=['POST'])
-def install_mutt():
-    """Install mutt using hands-off installation script."""
+@api.route('/send/custom', methods=['POST'])
+def send_custom():
+    """Send custom emails with configurable fields."""
     try:
-        import subprocess
-        import platform
+        data = request.json
+        count = data.get('count', 1)
+        recipients = data.get('recipients', [])
+        subject = data.get('subject')
+        body = data.get('body')
+        display_name = data.get('display_name')
+        attachment_type = data.get('attachment_type')
         
-        # Detect OS
-        os_type = platform.system().lower()
-        os_distro = "unknown"
+        if not recipients:
+            return jsonify({"error": "No recipients specified"}), 400
         
-        if os_type == "linux":
-            try:
-                with open('/etc/os-release', 'r') as f:
-                    for line in f:
-                        if line.startswith('ID='):
-                            os_distro = line.split('=')[1].strip().strip('"')
-                            break
-            except:
-                os_distro = "linux"
-        elif os_type == "darwin":
-            os_distro = "macos"
+        if not subject:
+            return jsonify({"error": "Subject is required"}), 400
         
-        # Determine installation command based on OS
-        if os_distro in ['ubuntu', 'debian']:
-            cmd = ['sudo', 'apt-get', 'update', '&&', 'sudo', 'apt-get', 'install', '-y', 'mutt']
-            # Need to run as shell command for && to work
-            install_cmd = 'sudo apt-get update && sudo apt-get install -y mutt'
-        elif os_distro in ['rhel', 'centos', 'fedora']:
-            install_cmd = 'sudo yum install -y mutt'
-        elif os_distro == 'macos':
-            install_cmd = 'brew install mutt'
-        else:
-            return jsonify({
-                "success": False,
-                "error": f"Unsupported OS distribution: {os_distro}. Please install mutt manually."
-            }), 400
+        if not body:
+            return jsonify({"error": "Body is required"}), 400
         
-        # Execute installation
-        try:
-            result = subprocess.run(
-                install_cmd,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=300,  # 5 minute timeout
-                check=False
-            )
-            
-            if result.returncode == 0:
-                # Verify installation
-                verify_result = subprocess.run(
-                    ['which', 'mutt'],
-                    capture_output=True,
-                    text=True,
-                    timeout=5
-                )
-                
-                if verify_result.returncode == 0:
-                    return jsonify({
-                        "success": True,
-                        "message": "Mutt installed successfully",
-                        "path": verify_result.stdout.strip(),
-                        "output": result.stdout
-                    })
-                else:
-                    return jsonify({
-                        "success": False,
-                        "error": "Installation completed but mutt not found in PATH",
-                        "output": result.stdout,
-                        "stderr": result.stderr
-                    }), 500
-            else:
-                return jsonify({
-                    "success": False,
-                    "error": f"Installation failed with exit code {result.returncode}",
-                    "output": result.stdout,
-                    "stderr": result.stderr
-                }), 500
-                
-        except subprocess.TimeoutExpired:
-            return jsonify({
-                "success": False,
-                "error": "Installation timed out after 5 minutes"
-            }), 500
-        except Exception as e:
-            logger.error(f"Error installing mutt: {e}")
-            return jsonify({
-                "success": False,
-                "error": str(e)
-            }), 500
-            
+        # Validate attachment_type if provided
+        if attachment_type and attachment_type not in ['.zip', '.com', '.scr', '.pdf', '.bat']:
+            return jsonify({"error": "Invalid attachment_type. Must be one of: .zip, .com, .scr, .pdf, .bat"}), 400
+        
+        result = email_generator.send_custom_emails(
+            count=count,
+            recipients=recipients,
+            subject=subject,
+            body=body,
+            display_name=display_name,
+            attachment_type=attachment_type
+        )
+        return jsonify(result)
     except Exception as e:
-        logger.error(f"Error in mutt install endpoint: {e}")
+        logger.error(f"Error sending custom emails: {e}")
         return jsonify({"error": str(e)}), 500
 
 
