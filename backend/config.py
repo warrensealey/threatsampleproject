@@ -6,6 +6,8 @@ import json
 import os
 from pathlib import Path
 
+from backend.encryption import encrypt_value, decrypt_value, is_encrypted
+
 CONFIG_FILE = Path(__file__).parent.parent / "data" / "config.json"
 
 DEFAULT_CONFIG = {
@@ -39,7 +41,7 @@ def load_config():
         try:
             with open(CONFIG_FILE, 'r') as f:
                 config = json.load(f)
-                
+
                 # Migration: Convert old single email_client to new structure
                 if "email_client" in config and "email_clients" not in config:
                     old_client = config.get("email_client", {})
@@ -52,15 +54,31 @@ def load_config():
                     # Remove old email_client key
                     if "email_client" in config:
                         del config["email_client"]
-                
+
                 # Ensure email_clients exists
                 if "email_clients" not in config:
                     config["email_clients"] = {}
-                
+
                 # Ensure current_email_client exists
                 if "current_email_client" not in config:
                     config["current_email_client"] = None
-                
+
+                # Decrypt password fields (backward compatible with plain text)
+                smtp_cfg = config.get("smtp") or {}
+                pwd = smtp_cfg.get("password")
+                if is_encrypted(pwd):
+                    smtp_cfg["password"] = decrypt_value(pwd)
+                    config["smtp"] = smtp_cfg
+
+                email_clients = config.get("email_clients") or {}
+                for name, client_cfg in email_clients.items():
+                    if not isinstance(client_cfg, dict):
+                        continue
+                    c_pwd = client_cfg.get("password")
+                    if is_encrypted(c_pwd):
+                        client_cfg["password"] = decrypt_value(c_pwd)
+                config["email_clients"] = email_clients
+
                 # Merge with defaults to ensure all keys exist
                 merged = DEFAULT_CONFIG.copy()
                 merged.update(config)
@@ -79,8 +97,28 @@ def save_config(config):
     """Save configuration to JSON file."""
     try:
         CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        # Work on a deep copy so callers keep decrypted values in memory
+        to_save = json.loads(json.dumps(config))
+
+        # Encrypt SMTP password if present
+        smtp_cfg = to_save.get("smtp") or {}
+        pwd = smtp_cfg.get("password")
+        if isinstance(pwd, str) and pwd and not is_encrypted(pwd):
+            smtp_cfg["password"] = encrypt_value(pwd)
+            to_save["smtp"] = smtp_cfg
+
+        # Encrypt email client passwords if present
+        email_clients = to_save.get("email_clients") or {}
+        for name, client_cfg in email_clients.items():
+            if not isinstance(client_cfg, dict):
+                continue
+            c_pwd = client_cfg.get("password")
+            if isinstance(c_pwd, str) and c_pwd and not is_encrypted(c_pwd):
+                client_cfg["password"] = encrypt_value(c_pwd)
+        to_save["email_clients"] = email_clients
+
         with open(CONFIG_FILE, 'w') as f:
-            json.dump(config, f, indent=2)
+            json.dump(to_save, f, indent=2)
         return True
     except IOError as e:
         print(f"Error saving config: {e}")
@@ -95,22 +133,22 @@ def get_smtp_config():
 
 def get_email_client_config(config_name=None):
     """Get email client configuration.
-    
+
     Args:
         config_name: Name of the config to retrieve. If None, returns current active config.
-    
+
     Returns:
         Dictionary with email client configuration, or empty dict if not found.
     """
     config = load_config()
     email_clients = config.get("email_clients", {})
-    
+
     if config_name is None:
         config_name = config.get("current_email_client")
-    
+
     if config_name and config_name in email_clients:
         return email_clients[config_name].copy()
-    
+
     return {}
 
 
@@ -129,122 +167,122 @@ def update_smtp_config(smtp_config):
 
 def update_email_client_config(email_client_config, config_name=None):
     """Update email client configuration.
-    
+
     Args:
         email_client_config: Configuration data to save
         config_name: Name of the config to update. If None, uses current_email_client.
                     If current_email_client is None, creates "default" config.
-    
+
     Returns:
         bool: True if saved successfully
     """
     config = load_config()
-    
+
     if "email_clients" not in config:
         config["email_clients"] = {}
-    
+
     if config_name is None:
         config_name = config.get("current_email_client")
         if config_name is None:
             config_name = "default"
             config["current_email_client"] = "default"
-    
+
     config["email_clients"][config_name] = email_client_config
     return save_config(config)
 
 
 def get_all_email_client_configs():
     """Get all email client configurations (without passwords).
-    
+
     Returns:
         Dictionary mapping config names to config data (passwords masked)
     """
     config = load_config()
     email_clients = config.get("email_clients", {})
-    
+
     result = {}
     for name, client_config in email_clients.items():
         safe_config = client_config.copy()
         if 'password' in safe_config:
             safe_config['password'] = '***' if safe_config['password'] else ''
         result[name] = safe_config
-    
+
     return result
 
 
 def save_email_client_config(config_name, email_client_config):
     """Save a named email client configuration.
-    
+
     Args:
         config_name: Name/ID for this configuration
         email_client_config: Configuration data to save
-    
+
     Returns:
         bool: True if saved successfully
     """
     config = load_config()
-    
+
     if "email_clients" not in config:
         config["email_clients"] = {}
-    
+
     config["email_clients"][config_name] = email_client_config
-    
+
     # If this is the first config, set it as current
     if config.get("current_email_client") is None:
         config["current_email_client"] = config_name
-    
+
     return save_config(config)
 
 
 def delete_email_client_config(config_name):
     """Delete an email client configuration.
-    
+
     Args:
         config_name: Name of the config to delete
-    
+
     Returns:
         bool: True if deleted successfully, False if config not found
     """
     config = load_config()
     email_clients = config.get("email_clients", {})
-    
+
     if config_name not in email_clients:
         return False
-    
+
     del email_clients[config_name]
-    
+
     # If deleted config was current, set current to None or first available
     if config.get("current_email_client") == config_name:
         if email_clients:
             config["current_email_client"] = list(email_clients.keys())[0]
         else:
             config["current_email_client"] = None
-    
+
     return save_config(config)
 
 
 def set_current_email_client(config_name):
     """Set the current active email client configuration.
-    
+
     Args:
         config_name: Name of the config to set as active
-    
+
     Returns:
         bool: True if set successfully, False if config not found
     """
     config = load_config()
     email_clients = config.get("email_clients", {})
-    
+
     if config_name not in email_clients:
         return False
-    
+
     config["current_email_client"] = config_name
     return save_config(config)
 
 
 def get_current_email_client_name():
     """Get the name of the current active email client configuration.
-    
+
     Returns:
         str: Name of current config, or None if no config is active
     """

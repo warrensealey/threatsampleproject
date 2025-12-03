@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Version 1.0.0**
+**Version 1.1.0**
 
 Comprehensive documentation for the Email Data Generation application.
 
@@ -297,6 +297,7 @@ Cynic test emails contain password-protected VBS archives. These test emails are
 **Features**:
 - Password-protected 7z archives
 - VBS script attachments
+- Each generated VBS script includes a unique random-number comment (for example `' random_id=...`) so that the file hash changes on every sample while the behaviour remains identical
 - Requires 7z command-line tool or py7zr library
 - Gmail-specific note: Google currently rejects the Cynic payload during outbound scanning, so Cynic sends via Gmail will fail.
 - Yahoo-specific note: Yahoo may reject the Cynic payload during outbound scanning similar to Gmail, so Cynic sends via Yahoo may fail.
@@ -330,9 +331,9 @@ Custom emails allow full control over email content and appearance for flexible 
 ## Configuration
 
 > **⚠️ STRONGLY RECOMMENDED: GMX Email Account**
-> 
+>
 > We strongly recommend using a GMX email account for this application. GMX server settings have been thoroughly tested and verified to work reliably. All other email provider settings are still in development and may require additional configuration or troubleshooting.
-> 
+>
 > To create a free GMX account, visit https://www.gmx.com/
 
 ### Configuration File Location
@@ -416,7 +417,7 @@ The application supports `.env` file for environment-specific configuration (via
    - Server settings will auto-populate for GMX:
      - IMAP: `imap.gmx.com:993`
      - SMTP: `mail.gmx.com:587`
-   
+
    **Note**: Other providers (Gmail, Yahoo, etc.) are still in development and may require troubleshooting.
 
 3. **Test Configuration**:
@@ -524,9 +525,14 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed Docker setup instructions.
 
 ## Security Considerations
 
-1. **Credentials Storage**: Passwords are stored in plain text in `data/config.json`. Ensure proper file permissions:
+1. **Credentials Storage**:
+   - Only password fields are encrypted at rest using symmetric encryption (Fernet) before being written to `data/config.json`.
+   - The encryption key is loaded from the `ENCRYPTION_KEY` environment variable when set, or from `data/.encryption_key` (auto-generated on first use and git-ignored).
+   - Non-sensitive fields (such as usernames, server names, and ports) remain in plain text for easier troubleshooting.
+   - Ensure proper file permissions on the data directory:
    ```bash
    chmod 600 data/config.json
+   chmod 600 data/.encryption_key  # if using the key file
    ```
 
 2. **Network Security**: The application runs on HTTP by default. For production, use HTTPS with a reverse proxy.

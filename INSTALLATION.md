@@ -1,6 +1,6 @@
 # Installation Guide
 
-**Version 1.0.0**
+**Version 1.1.0**
 
 This guide provides step-by-step instructions for installing and setting up the Email Data Generation application.
 
@@ -33,15 +33,15 @@ Before installing the application, ensure you have the following:
 ### Email Account Setup
 
 > **⚠️ STRONGLY RECOMMENDED: GMX Email Account**
-> 
+>
 > **We strongly recommend setting up a GMX email account** for use with this application. GMX server settings have been thoroughly tested and are known to work reliably. All other email provider settings are still in development and may require additional configuration or troubleshooting.
-> 
+>
 > **To create a free GMX account:**
 > 1. Visit https://www.gmx.com/
 > 2. Click "Sign Up" or "Create Account"
 > 3. Follow the registration process
 > 4. Once created, you can use your GMX email address and password in the application configuration
-> 
+>
 > Using a GMX account will provide the most reliable experience and reduce setup issues.
 
 ### Gmail Considerations
@@ -178,7 +178,16 @@ pip install Flask==3.0.0 Flask-CORS==4.0.0 requests python-dotenv==1.0.0
 
 The `py7zr` package is optional if you have the `7z` command-line tool installed.
 
-### 4. Verify Installation
+### 4. Configure Encryption Key (Password Protection)
+
+Only password fields in the configuration are encrypted at rest. The application uses a symmetric key for this:
+
+- **Preferred (production)**: Set `ENCRYPTION_KEY` in your environment (or in `.env`). This must be a valid Fernet key.
+- **Development fallback**: If `ENCRYPTION_KEY` is not set, the app will automatically create `data/.encryption_key` on first run and reuse it.
+
+The key file `data/.encryption_key` is excluded from git and should be treated as a secret. Do not share it publicly.
+
+### 5. Verify Installation
 
 Check that Flask is installed correctly:
 
@@ -239,7 +248,7 @@ The application will be accessible on:
    - Enter your GMX email address (e.g., `yourname@gmx.com`) as the username
    - Enter your GMX account password
    - Verify IMAP and SMTP settings are correct (should be pre-filled for GMX)
-   
+
    **Note**: If you choose to use a different email provider (Gmail, Yahoo, iCloud, etc.), be aware that these settings are still in development and may require additional configuration or troubleshooting.
 
 3. **Configure Email Generation Defaults**:

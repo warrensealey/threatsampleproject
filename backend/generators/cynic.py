@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import time
 import logging
+import secrets
 from backend.config import get_email_generation_config
 
 logger = logging.getLogger(__name__)
@@ -37,35 +38,36 @@ wscriptShell.RegWrite "HKCU\\cynic_test\\cynic_test_sample", messageText, "REG_S
 
 class CynicGenerator:
     """Generate Cynic test emails with VBS files and password-protected 7z archives."""
-    
+
     def __init__(self):
         """Initialize Cynic generator."""
         self.config = get_email_generation_config()
         self.password = "password"  # Default password from cynictest
-    
+
     def create_vbs_file(self, output_path=None, timestamp=None):
         """
         Create VBS test file.
-        
+
         Args:
             output_path: Path to save VBS file (optional)
             timestamp: Timestamp to include in VBS file (optional)
-        
+
         Returns:
             Path to created VBS file
         """
         if timestamp is None:
             timestamp = int(time.time())
-        
+
         if output_path is None:
             temp_dir = Path(tempfile.gettempdir())
             output_path = temp_dir / f"cynictest{timestamp}.vbs"
         else:
             output_path = Path(output_path)
-        
+
         try:
-            # Append timestamp comment to VBS file
-            vbs_content = VBS_TEMPLATE + f"\n'cynictest{timestamp}.vbs"
+            # Append timestamp and random-id comments to VBS file so each file has a unique hash
+            random_id = secrets.randbits(64)
+            vbs_content = VBS_TEMPLATE + f"\n'cynictest{timestamp}.vbs\n' random_id={random_id}"
             with open(output_path, 'w') as f:
                 f.write(vbs_content)
             logger.info(f"Created VBS file: {output_path}")
@@ -73,32 +75,32 @@ class CynicGenerator:
         except Exception as e:
             logger.error(f"Failed to create VBS file: {e}")
             raise
-    
+
     def create_7z_archive(self, vbs_file, output_path=None, password=None):
         """
         Create password-protected 7z archive.
-        
+
         Args:
             vbs_file: Path to VBS file to archive
             output_path: Path to save 7z archive (optional)
             password: Archive password (default: "password")
-        
+
         Returns:
             Path to created 7z archive
         """
         if password is None:
             password = self.password
-        
+
         if output_path is None:
             temp_dir = Path(tempfile.gettempdir())
             output_path = temp_dir / "cynictest.7z"
         else:
             output_path = Path(output_path)
-        
+
         vbs_file = Path(vbs_file)
         if not vbs_file.exists():
             raise FileNotFoundError(f"VBS file not found: {vbs_file}")
-        
+
         try:
             # Use 7z command line tool (same as cynictest script)
             # 7z a -t7z -mhe=on -ppassword output.7z input.vbs
@@ -110,14 +112,14 @@ class CynicGenerator:
                 str(output_path),
                 str(vbs_file)
             ]
-            
+
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
             )
-            
+
             if result.returncode == 0:
                 logger.info(f"Created 7z archive: {output_path}")
                 return output_path
@@ -136,47 +138,47 @@ class CynicGenerator:
         except Exception as e:
             logger.error(f"Failed to create 7z archive: {e}")
             raise
-    
+
     def generate_email_body(self, timestamp):
         """
         Generate email body for Cynic test email.
-        
+
         Args:
             timestamp: Timestamp to include in body
-        
+
         Returns:
             Email body text
         """
         return f"""The contents of this attachment are so important I had to password protect it! The password is password
 {timestamp}"""
-    
+
     def generate_emails(self, count=1, recipients=None):
         """
         Generate Cynic test emails.
-        
+
         Args:
             count: Number of emails to generate
             recipients: List of recipient email addresses
-        
+
         Returns:
             List of email dictionaries with subject, body, recipients, and attachment path
         """
         if not recipients:
             recipients = self.config.get("default_recipients", [])
-        
+
         if not recipients:
             raise ValueError("No recipients specified")
-        
+
         emails = []
         subject_template = self.config.get("subject_templates", {}).get("cynic", "This is a important top secret email!")
-        
+
         for i in range(count):
             timestamp = int(time.time()) + i
             vbs_file = self.create_vbs_file(timestamp=timestamp)
             archive_file = self.create_7z_archive(vbs_file)
             body = self.generate_email_body(timestamp)
             subject = f"{subject_template} {timestamp}"
-            
+
             emails.append({
                 "subject": subject,
                 "body": body,
@@ -185,6 +187,6 @@ class CynicGenerator:
                 "attachments": [str(archive_file)],
                 "temp_files": [str(vbs_file)]  # Track temp files for cleanup
             })
-        
+
         return emails
 

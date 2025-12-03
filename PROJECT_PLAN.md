@@ -1,6 +1,6 @@
 # Email Data Generation Project - Complete Plan
 
-**Version:** 1.0.0  
+**Version:** 1.1.0  
 **Repository:** `/Users/warrensealey/threatsampleproject/`  
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
@@ -51,7 +51,7 @@ threatsampleproject/
 └── PROJECT_PLAN.md         # This file
 ```
 
-## Current Features (Version 1.0.0)
+## Current Features (Version 1.1.0)
 
 ### Email Types
 - **Phishing Emails**: Test emails with PhishTank URLs
@@ -205,20 +205,14 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
 - Configuration file excluded from git
 - Non-root user in Docker containers
 - File permissions for sensitive data
+- **Configuration Encryption (implemented in 1.1.0)**:
+  - Only password fields in the configuration (SMTP and email client passwords) are encrypted at rest using Fernet symmetric encryption.
+  - Encryption keys are loaded from the `ENCRYPTION_KEY` environment variable when set, or from `data/.encryption_key` (auto-generated on first use and git-ignored).
 
-### Planned Security Enhancements
-
-1. **Configuration Encryption** (Planned)
-   - Encrypt password fields in configuration file
-   - Use Fernet symmetric encryption
-   - Key management via environment variable or key file
-   - Automatic migration from plain text
-   - Scope: Encrypt passwords only (not usernames)
-
-2. **Credential Management** (Completed)
-   - Removed hardcoded credentials from code
-   - Git history cleaned using BFG Repo-Cleaner
-   - Credentials stored only in local config file
+### Credential Management
+- Removed hardcoded credentials from code
+- Git history cleaned using BFG Repo-Cleaner
+- Credentials stored only in local config file
 
 ## Future Enhancements
 
@@ -287,7 +281,12 @@ docker-compose up
 
 ## Version History
 
-### Version 1.0.0 (Current)
+### Version 1.1.0 (Current)
+- Added random-number comments to Cynic VBS scripts so each generated sample has a unique file hash while maintaining identical behaviour.
+- Implemented password-only configuration encryption for SMTP and email client passwords at rest in `data/config.json` using Fernet.
+- Updated documentation and installation instructions to describe encryption key management and Cynic hash randomization.
+
+### Version 1.0.0
 - Initial release
 - All email types implemented (Phishing, EICAR, Cynic, GTUBE, Custom)
 - Multiple email provider support

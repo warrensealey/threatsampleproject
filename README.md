@@ -1,6 +1,6 @@
 # Email Data Generation Project
 
-**Version 1.0.0**
+**Version 1.1.0**
 
 Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
@@ -137,7 +137,11 @@ threatsampleproject/
 
 ## Version
 
-Current version: **1.0.0**
+Current version: **1.1.0**
+
+### What's new in 1.1.0
+- Cynic test VBS scripts now include a random-number comment so each generated sample has a unique file hash, while behaviour remains identical.
+- Configuration passwords (SMTP and email client passwords only) are now encrypted at rest in `data/config.json` using Fernet, with keys managed via `ENCRYPTION_KEY` or `data/.encryption_key`.
 
 See `VERSION` file for version information.
 
