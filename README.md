@@ -64,22 +64,24 @@ Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions
 
 > **Note**: GMX server settings are known to work and have been tested. All other hosted mail provider settings are still in development and may require additional configuration or troubleshooting.
 
-| Provider | IMAP | SMTP | Port | Encryption |
-|----------|------|------|------|------------|
-| GMX | imap.gmx.com | mail.gmx.com | 587 | TLS |
-| Gmail | imap.gmail.com | smtp.gmail.com | 587 | TLS |
-| Yahoo | imap.mail.yahoo.com | smtp.mail.yahoo.com | 587 | TLS |
-| iCloud | imap.mail.me.com | smtp.mail.me.com | 587 | TLS |
-| Zoho | imap.zoho.com | smtp.zoho.com | 587 | TLS |
-| Outlook.com | imap-mail.outlook.com | smtp-mail.outlook.com | 587 | TLS |
-| Office365 | outlook.office365.com | smtp.office365.com | 587 | TLS |
-| AOL | imap.aol.com | smtp.aol.com | 465 | SSL |
+| Provider    | IMAP                  | SMTP                  | Port | Encryption |
+| ----------- | --------------------- | --------------------- | ---- | ---------- |
+| GMX         | imap.gmx.com          | mail.gmx.com          | 587  | TLS        |
+| Gmail       | imap.gmail.com        | smtp.gmail.com        | 587  | TLS        |
+| Yahoo       | imap.mail.yahoo.com   | smtp.mail.yahoo.com   | 587  | TLS        |
+| iCloud      | imap.mail.me.com      | smtp.mail.me.com      | 587  | TLS        |
+| Zoho        | imap.zoho.com         | smtp.zoho.com         | 587  | TLS        |
+| Outlook.com | imap-mail.outlook.com | smtp-mail.outlook.com | 587  | TLS        |
+| Office365   | outlook.office365.com | smtp.office365.com    | 587  | TLS        |
+| AOL         | imap.aol.com          | smtp.aol.com          | 465  | SSL        |
 
 > **Gmail-specific notes**
+>
 > - Gmail requires an **app-specific password** (generate it under Google Account → Security) for IMAP/SMTP access; regular passwords are rejected when 2FA or advanced security is enabled.
 > - With the app password configured, Gmail can successfully send phishing URL tests and GTUBE spam-test emails. Google currently blocks the EICAR and Cynic payloads at send time, so those templates will fail when routed through Gmail.
 
 > **Yahoo-specific notes**
+>
 > - Yahoo requires an **app-specific password** (generate it under Yahoo Account → Account Security → Generate app password) for IMAP/SMTP access; regular passwords will cause "Connection unexpectedly closed" errors when 2FA or modern account security is enabled.
 > - With the app password configured, Yahoo can successfully send phishing URL tests and GTUBE spam-test emails. Yahoo may block EICAR and Cynic payloads similar to Gmail, so those templates may fail when routed through Yahoo.
 
@@ -140,6 +142,7 @@ threatsampleproject/
 Current version: **1.1.0**
 
 ### What's new in 1.1.0
+
 - Cynic test VBS scripts now include a random-number comment so each generated sample has a unique file hash, while behaviour remains identical.
 - Configuration passwords (SMTP and email client passwords only) are now encrypted at rest in `data/config.json` using Fernet, with keys managed via `ENCRYPTION_KEY` or `data/.encryption_key`.
 
@@ -160,4 +163,3 @@ GitHub: https://github.com/warrensealey/threatsampleproject
 ## License
 
 See repository for license information.
-

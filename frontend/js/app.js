@@ -215,6 +215,12 @@ Username: ${attempt.attempted_username || 'N/A'}
 Encryption: ${attempt.attempted_encryption || 'N/A'}
 Method: ${attempt.connection_method || 'N/A'}`;
             }
+
+            // For Cynic sends, explicitly surface any VBS MD5 checksums returned
+            if (type === 'cynic' && Array.isArray(result.cynic_vbs_md5) && result.cynic_vbs_md5.length > 0) {
+                const md5Lines = result.cynic_vbs_md5.map(md5 => `- ${md5}`).join('\n');
+                connectionText += `\n\nCynic VBS MD5 checksums:\n${md5Lines}`;
+            }
         }
         
         if (result.success) {

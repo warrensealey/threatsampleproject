@@ -207,6 +207,8 @@ class EmailGenerator:
         failed_count = 0
         errors = []
         connection_error = None
+        # For Cynic emails, track MD5 checksums of the underlying VBS scripts
+        cynic_vbs_md5_list = [] if email_type == "cynic" else None
         
         try:
             smtp_client = SMTPClient(smtp_config)
@@ -262,6 +264,11 @@ Possible Causes:
                                 "timestamp": self._get_timestamp(),
                                 "status": "sent"
                             })
+                            # Capture Cynic VBS MD5 checksums for reporting
+                            if cynic_vbs_md5_list is not None:
+                                vbs_md5 = email_data.get("vbs_md5")
+                                if vbs_md5:
+                                    cynic_vbs_md5_list.append(vbs_md5)
                         else:
                             failed_count += 1
                             errors.append(f"Failed to send: {email_data['subject']}")
@@ -312,16 +319,31 @@ Possible Causes:
             "connection_info": connection_info,
             "connection_attempt": connection_attempt
         }
+
+        # Include Cynic VBS MD5 checksums (if any) in the result payload
+        if cynic_vbs_md5_list:
+            result["cynic_vbs_md5"] = cynic_vbs_md5_list
         
         # Add success details if all emails sent successfully
         if result["success"]:
-            result["connection_details"] = f"""Connection Successful:
+            connection_details = f"""Connection Successful:
 Server: {connection_attempt['attempted_server']}
 Username: {connection_attempt['attempted_username'] or 'N/A'}
 Encryption: {connection_attempt['attempted_encryption']}
 Method: {connection_attempt['connection_method']}
-
+        
 Successfully sent {sent_count} email(s) of type: {email_type}"""
+
+            # Append Cynic VBS MD5 info into the human-readable details so it
+            # appears directly in the success notification / modal.
+            if cynic_vbs_md5_list:
+                md5_lines = "\n".join(f"- {md5}" for md5 in cynic_vbs_md5_list)
+                connection_details += f"""
+
+Cynic VBS MD5 checksums:
+{md5_lines}"""
+
+            result["connection_details"] = connection_details
         
         return result
     

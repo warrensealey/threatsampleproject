@@ -8,6 +8,7 @@ import subprocess
 import time
 import logging
 import secrets
+import hashlib
 from backend.config import get_email_generation_config
 
 logger = logging.getLogger(__name__)
@@ -91,13 +92,15 @@ class CynicGenerator:
         if password is None:
             password = self.password
 
+        vbs_file = Path(vbs_file)
+
+        # Default archive path is derived from the VBS file name so that each
+        # generated sample gets its own 7z file (avoids reusing a single archive
+        # across multiple emails and ensures differing hashes per sample).
         if output_path is None:
-            temp_dir = Path(tempfile.gettempdir())
-            output_path = temp_dir / "cynictest.7z"
+            output_path = vbs_file.with_suffix(".7z")
         else:
             output_path = Path(output_path)
-
-        vbs_file = Path(vbs_file)
         if not vbs_file.exists():
             raise FileNotFoundError(f"VBS file not found: {vbs_file}")
 
@@ -128,7 +131,7 @@ class CynicGenerator:
         except FileNotFoundError:
             # Try py7zr as fallback
             try:
-                import py7zr
+                import py7zr  # pyright: ignore[reportMissingImports]
                 with py7zr.SevenZipFile(output_path, 'w', password=password) as archive:
                     archive.write(vbs_file, vbs_file.name)
                 logger.info(f"Created 7z archive (py7zr): {output_path}")
@@ -176,6 +179,18 @@ class CynicGenerator:
             timestamp = int(time.time()) + i
             vbs_file = self.create_vbs_file(timestamp=timestamp)
             archive_file = self.create_7z_archive(vbs_file)
+
+            # Compute MD5 checksum of the VBS script so each sample can be
+            # uniquely identified in logs and UI notifications.
+            try:
+                with open(vbs_file, "rb") as f:
+                    vbs_data = f.read()
+                vbs_md5 = hashlib.md5(vbs_data).hexdigest()
+                logger.info(f"Cynic VBS file {vbs_file} MD5: {vbs_md5}")
+            except Exception as e:
+                vbs_md5 = None
+                logger.error(f"Failed to compute MD5 for Cynic VBS file {vbs_file}: {e}")
+
             body = self.generate_email_body(timestamp)
             subject = f"{subject_template} {timestamp}"
 
@@ -185,7 +200,9 @@ class CynicGenerator:
                 "recipients": recipients,
                 "type": "cynic",
                 "attachments": [str(archive_file)],
-                "temp_files": [str(vbs_file)]  # Track temp files for cleanup
+                "temp_files": [str(vbs_file)],  # Track temp files for cleanup
+                "vbs_md5": vbs_md5,
+                "vbs_path": str(vbs_file),
             })
 
         return emails

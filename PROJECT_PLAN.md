@@ -1,7 +1,7 @@
 # Email Data Generation Project - Complete Plan
 
-**Version:** 1.1.0  
-**Repository:** `/Users/warrensealey/threatsampleproject/`  
+**Version:** 1.1.0
+**Repository:** `/Users/warrensealey/threatsampleproject/`
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
 ## Project Overview
@@ -54,6 +54,7 @@ threatsampleproject/
 ## Current Features (Version 1.1.0)
 
 ### Email Types
+
 - **Phishing Emails**: Test emails with PhishTank URLs
 - **EICAR Test Emails**: Standard antivirus test files
 - **Cynic Test Emails**: Password-protected VBS archives
@@ -61,6 +62,7 @@ threatsampleproject/
 - **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat)
 
 ### Email Providers
+
 - GMX (recommended, tested and verified)
 - Gmail (requires app-specific password)
 - Yahoo (requires app-specific password)
@@ -71,12 +73,14 @@ threatsampleproject/
 - AOL
 
 ### Configuration Management
+
 - Multiple email client configurations (save, edit, delete, switch)
 - Current active configuration tracking
 - Default recipients and email count settings
 - Email sending history (last 100 entries)
 
 ### User Interface
+
 - Dashboard with email sending options
 - Configuration page with provider selection
 - Detailed connection information display
@@ -84,6 +88,7 @@ threatsampleproject/
 - Test email configuration validation
 
 ### Docker Support
+
 - Dockerfile for containerization
 - Docker Compose for easy deployment
 - GitHub Actions automated builds
@@ -94,6 +99,7 @@ threatsampleproject/
 ### Backend Components
 
 1. **SMTP Client (`smtp_client.py`)**:
+
    - Python smtplib implementation
    - Support for multiple email providers
    - Configurable server, port, authentication (TLS/SSL)
@@ -102,12 +108,14 @@ threatsampleproject/
    - Detailed error reporting
 
 2. **Email Client (`email_client.py`)**:
+
    - IMAP client for reading emails
    - Support for SSL/TLS connections
    - Read inbox, folders, messages
    - Configurable through UI
 
 3. **Email Generators**:
+
    - **Phishing Generator**: Integrates with PhishTank API
    - **EICAR Generator**: Creates standard antivirus test files
    - **Cynic Generator**: Generates password-protected VBS archives
@@ -115,6 +123,7 @@ threatsampleproject/
    - **Custom Generator**: Fully configurable email generation
 
 4. **Email Generator Coordinator (`email_generator.py`)**:
+
    - Orchestrates email generation and sending
    - Derives SMTP settings from email client configuration
    - Handles email sending with error tracking
@@ -122,6 +131,7 @@ threatsampleproject/
    - Provides detailed connection information
 
 5. **Configuration Management (`config.py`)**:
+
    - JSON-based configuration storage
    - Multiple email client configurations
    - Current active configuration tracking
@@ -139,6 +149,7 @@ threatsampleproject/
 ### Frontend Components
 
 1. **Dashboard (`index.html`)**:
+
    - Email sending interface for all email types
    - Email history display
    - Connection details modal
@@ -153,6 +164,7 @@ threatsampleproject/
 ## API Endpoints
 
 ### Configuration
+
 - `GET /api/config` - Get all configuration
 - `POST /api/config` - Update configuration
 - `GET /api/email/config` - Get email client config (with optional name parameter)
@@ -163,6 +175,7 @@ threatsampleproject/
 - `POST /api/email/config/current` - Set current active configuration
 
 ### Email Operations
+
 - `POST /api/test/email` - Test email configuration
 - `POST /api/send/phishing` - Send phishing emails
 - `POST /api/send/eicar` - Send EICAR test emails
@@ -187,11 +200,13 @@ threatsampleproject/
 ## Installation Methods
 
 ### Docker (Recommended)
+
 - Pre-built images available from GitHub Container Registry
 - Docker Compose for easy deployment
 - Automated builds via GitHub Actions
 
 ### Manual Installation
+
 - Python 3.8+ required
 - Virtual environment recommended
 - Install dependencies via pip
@@ -201,6 +216,7 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
 ## Security Considerations
 
 ### Current Security Measures
+
 - Passwords masked in API responses
 - Configuration file excluded from git
 - Non-root user in Docker containers
@@ -210,6 +226,7 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
   - Encryption keys are loaded from the `ENCRYPTION_KEY` environment variable when set, or from `data/.encryption_key` (auto-generated on first use and git-ignored).
 
 ### Credential Management
+
 - Removed hardcoded credentials from code
 - Git history cleaned using BFG Repo-Cleaner
 - Credentials stored only in local config file
@@ -217,18 +234,22 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
 ## Future Enhancements
 
 ### High Priority
+
 1. **Configuration Encryption**
    - Implement Fernet encryption for password fields
    - Add encryption key management
    - Update documentation
 
 ### Medium Priority
+
 2. **Email Template Customization**
+
    - User-defined email templates
    - Template library
    - Template sharing
 
 3. **Scheduled Email Sending**
+
    - Cron-like scheduling
    - Recurring email sends
    - Schedule management UI
@@ -239,12 +260,15 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
    - Historical trends
 
 ### Low Priority
+
 5. **Email Search Functionality**
+
    - Search sent emails
    - Filter by type, date, status
    - Export capabilities
 
 6. **Attachment Download Support**
+
    - Download sent attachments
    - Attachment library
    - Attachment preview
@@ -264,12 +288,14 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
 ## Docker Deployment
 
 ### GitHub Container Registry
+
 - **Image**: `ghcr.io/warrensealey/threatsampleproject:latest`
 - **Version Tags**: `ghcr.io/warrensealey/threatsampleproject:1.0.0`
 - **Automated Builds**: On push to main branch
 - **Workflow**: `.github/workflows/docker.yml`
 
 ### Local Docker Usage
+
 ```bash
 # Pull and run
 docker pull ghcr.io/warrensealey/threatsampleproject:latest
@@ -282,11 +308,13 @@ docker-compose up
 ## Version History
 
 ### Version 1.1.0 (Current)
+
 - Added random-number comments to Cynic VBS scripts so each generated sample has a unique file hash while maintaining identical behaviour.
 - Implemented password-only configuration encryption for SMTP and email client passwords at rest in `data/config.json` using Fernet.
 - Updated documentation and installation instructions to describe encryption key management and Cynic hash randomization.
 
 ### Version 1.0.0
+
 - Initial release
 - All email types implemented (Phishing, EICAR, Cynic, GTUBE, Custom)
 - Multiple email provider support
