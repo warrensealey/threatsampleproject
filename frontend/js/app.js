@@ -1035,17 +1035,44 @@ async function loadConfig(configName = null) {
               provider.smtp_use_ssl === true;
           }
         }
+      }
+    } else {
+      // If no config exists, auto-populate GMX (default selected)
+      const providerSelect = document.getElementById('emailProvider');
+      if (providerSelect) {
+        // Ensure GMX is selected
+        providerSelect.value = 'gmx';
+        populateProviderSettings(emailProviderConfigs.gmx);
+      }
+    }
+
+    // Load email generation config
+    const config = await api.getConfig();
+    if (config.email_generation) {
+      document.getElementById('defaultRecipients').value = (
+        config.email_generation.default_recipients || []
+      ).join(', ');
+      document.getElementById('defaultCount').value =
+        config.email_generation.default_count || 1;
+    }
+    // Load templates into config page list
+    await loadTemplateList();
+  } catch (error) {
+    console.error('Failed to load config:', error);
+    showAlert('Failed to load configuration', 'error');
+  }
+}
 
 async function loadCustomTemplates() {
   try {
     const result = await api.getTemplates('custom');
-    customTemplates = (result.templates || {});
+    customTemplates = result.templates || {};
 
     const select = document.getElementById('customTemplateSelect');
     if (!select) return;
 
     // Reset options
-    select.innerHTML = '<option value=\"\">-- No Template --</option>';
+    select.innerHTML = '<option value="">-- No Template --</option>';
 
     Object.keys(customTemplates)
       .sort()
@@ -1077,32 +1104,6 @@ async function loadCustomTemplates() {
     };
   } catch (error) {
     console.error('Failed to load custom templates:', error);
-  }
-      }
-    } else {
-      // If no config exists, auto-populate GMX (default selected)
-      const providerSelect = document.getElementById('emailProvider');
-      if (providerSelect) {
-        // Ensure GMX is selected
-        providerSelect.value = 'gmx';
-        populateProviderSettings(emailProviderConfigs.gmx);
-      }
-    }
-
-    // Load email generation config
-    const config = await api.getConfig();
-    if (config.email_generation) {
-      document.getElementById('defaultRecipients').value = (
-        config.email_generation.default_recipients || []
-      ).join(', ');
-      document.getElementById('defaultCount').value =
-        config.email_generation.default_count || 1;
-    }
-    // Load templates into config page list
-    await loadTemplateList();
-  } catch (error) {
-    console.error('Failed to load config:', error);
-    showAlert('Failed to load configuration', 'error');
   }
 }
 
@@ -1137,13 +1138,29 @@ async function loadTemplateList() {
         .forEach((name) => {
           html += `<li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee;">
               <span><strong>${name}</strong></span>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.85em;" onclick="deleteTemplateConfig('${type}','${name.replace(/'/g, \"\\'\")}')">Delete</button>
+              <button class="btn btn-secondary template-delete-btn"
+                      style="padding: 4px 8px; font-size: 0.85em;"
+                      data-template-type="${type}"
+                      data-template-name="${name}">
+                Delete
+              </button>
             </li>`;
         });
       html += '</ul>';
     });
 
     container.innerHTML = html || '<p class="loading">No templates saved yet.</p>';
+
+    // Attach delete handlers
+    container.querySelectorAll('.template-delete-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const type = btn.getAttribute('data-template-type');
+        const name = btn.getAttribute('data-template-name');
+        if (type && name) {
+          window.deleteTemplateConfig(type, name);
+        }
+      });
+    });
   } catch (error) {
     console.error('Failed to load templates:', error);
     container.innerHTML =
