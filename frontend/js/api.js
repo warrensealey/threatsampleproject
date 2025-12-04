@@ -210,6 +210,37 @@ class APIClient {
       }
     );
   }
+
+  // Schedules
+  async getSchedules() {
+    return this.request('/schedules');
+  }
+
+  async saveSchedule(schedule) {
+    return this.request('/schedules', {
+      method: 'POST',
+      body: schedule,
+    });
+  }
+
+  async deleteSchedule(id) {
+    return this.request(`/schedules/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  async toggleSchedule(id, enabled) {
+    return this.request(`/schedules/${encodeURIComponent(id)}/toggle`, {
+      method: 'POST',
+      body: { enabled },
+    });
+  }
+
+  async runDueSchedules() {
+    return this.request('/schedules/run-due', {
+      method: 'POST',
+    });
+  }
 }
 
 const api = new APIClient();

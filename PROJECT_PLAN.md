@@ -1,6 +1,6 @@
 # Email Data Generation Project - Complete Plan
 
-**Version:** 1.3.0
+**Version:** 1.4.0
 **Repository:** `/Users/warrensealey/threatsampleproject/`
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
@@ -51,7 +51,7 @@ threatsampleproject/
 └── PROJECT_PLAN.md         # This file
 ```
 
-## Current Features (Version 1.3.0)
+## Current Features (Version 1.4.0)
 
 ### Email Types
 
@@ -236,32 +236,26 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
 
 ### High Priority
 
-1. **Scheduled Email Sending**
-
-   - Cron-like scheduling
-   - Recurring email sends
-   - Schedule management UI
-
-2. **Email Statistics and Reporting**
+1. **Email Statistics and Reporting**
    - Success/failure rates
    - Provider performance metrics
    - Historical trends
 
 ### Low Priority
 
-3. **Email Search Functionality**
+2. **Email Search Functionality**
 
    - Search sent emails
    - Filter by type, date, status
    - Export capabilities
 
-4. **Attachment Download Support**
+3. **Attachment Download Support**
 
    - Download sent attachments
    - Attachment library
    - Attachment preview
 
-5. **Advanced Configuration Options**
+4. **Advanced Configuration Options**
    - Email rate limiting
    - Retry policies
    - Custom SMTP headers
@@ -295,7 +289,11 @@ docker-compose up
 
 ## Version History
 
-### Version 1.3.0 (Current)
+### Version 1.4.0 (Current)
+
+- **Scheduled Email Sending**: Implemented a complete scheduling system with an in-app background scheduler (daemon thread with file locking), REST API endpoints for CRUD operations, and a dashboard UI for creating and managing schedules. Supports one-off sends at a specific date/time, interval schedules (every N hours), and weekly recurring schedules (specific weekdays at a given time). Includes proper timezone handling (app-wide timezone setting), automatic failure detection (schedules auto-disable after 3 consecutive failures), and execution tracking (last run status, next run calculation). Schedules run automatically while the Docker container is up.
+
+### Version 1.3.0
 
 - Implemented **email template customization** on the dashboard, allowing users to save, reuse, and manage custom email templates (subject, body, display name, attachment type).
 - Fixed and hardened the **Configuration** page JavaScript so that selecting an email provider reliably auto-populates IMAP/SMTP fields, eliminating prior issues caused by script errors.

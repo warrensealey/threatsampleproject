@@ -16,6 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Dashboard functions
 let defaultRecipients = [];
 let customTemplates = {};
+let schedulesCache = [];
 
 async function initDashboard() {
   await loadHistory();
@@ -23,6 +24,8 @@ async function initDashboard() {
   await loadCustomTemplates();
   setupSendButtons();
   setupEmailSendModal();
+  await loadSchedules();
+  setupScheduleUI();
 
   // Custom templates: save button handler
   const saveTemplateBtn = document.getElementById('saveCustomTemplateBtn');
@@ -596,6 +599,355 @@ async function loadHistory() {
     console.error('Failed to load history:', error);
     document.getElementById('history').innerHTML =
       '<p class="alert alert-error">Failed to load history.</p>';
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Scheduled sends (dashboard)
+// ---------------------------------------------------------------------------
+
+async function loadSchedules() {
+  try {
+    const data = await api.getSchedules();
+    const schedulesDiv = document.getElementById('schedulesTable');
+    if (!schedulesDiv) return;
+
+    const schedules = data.schedules || [];
+    const tz = data.timezone || 'UTC';
+    schedulesCache = schedules;
+
+    if (!schedules.length) {
+      schedulesDiv.innerHTML =
+        '<p class="loading">No schedules defined yet. Click \"Create Schedule\" to add one.</p>';
+      return;
+    }
+
+    let html =
+      '<table class="history-table"><thead><tr><th>Name</th><th>Type</th><th>Email Type</th><th>Recipients</th><th>Next Run (UTC)</th><th>Enabled</th><th>Last Status</th><th>Actions</th></tr></thead><tbody>';
+
+    schedules.forEach((s) => {
+      const nextRun =
+        s.next_run_utc && typeof s.next_run_utc === 'string'
+          ? new Date(s.next_run_utc).toLocaleString()
+          : 'N/A';
+      const recipients = Array.isArray(s.recipients)
+        ? s.recipients.join(', ')
+        : '';
+      html += `<tr>
+        <td>${s.name || ''}</td>
+        <td>${s.schedule_type || 'one_off'}</td>
+        <td>${s.email_type || ''}</td>
+        <td>${recipients}</td>
+        <td>${nextRun}</td>
+        <td>${s.enabled ? 'Yes' : 'No'}</td>
+        <td>${s.last_status || ''}</td>
+        <td>
+          <button class="btn btn-secondary btn-small" data-action="edit-schedule" data-id="${
+            s.id
+          }">Edit</button>
+          <button class="btn btn-secondary btn-small" data-action="toggle-schedule" data-id="${
+            s.id
+          }">${s.enabled ? 'Disable' : 'Enable'}</button>
+          <button class="btn btn-danger btn-small" data-action="delete-schedule" data-id="${
+            s.id
+          }">Delete</button>
+        </td>
+      </tr>`;
+    });
+
+    html += '</tbody></table>';
+    html += `<p style="margin-top: 8px; font-size: 0.85em; color: #666;">Times shown are converted from UTC using your browser's locale. Application timezone: ${tz}</p>`;
+    schedulesDiv.innerHTML = html;
+  } catch (error) {
+    console.error('Failed to load schedules:', error);
+    const schedulesDiv = document.getElementById('schedulesTable');
+    if (schedulesDiv) {
+      schedulesDiv.innerHTML =
+        '<p class="alert alert-error">Failed to load schedules.</p>';
+    }
+  }
+}
+
+function setupScheduleUI() {
+  const createBtn = document.getElementById('createScheduleBtn');
+  const scheduleModal = document.getElementById('scheduleModal');
+  const scheduleModalClose = document.getElementById('scheduleModalClose');
+  const scheduleCancelBtn = document.getElementById('scheduleCancelBtn');
+  const scheduleForm = document.getElementById('scheduleForm');
+  const scheduleTypeSelect = document.getElementById('scheduleType');
+
+  if (!createBtn || !scheduleModal || !scheduleForm || !scheduleTypeSelect) {
+    return;
+  }
+
+  const scheduleOneOffFields = document.getElementById('scheduleOneOffFields');
+  const scheduleIntervalFields = document.getElementById(
+    'scheduleIntervalFields'
+  );
+  const scheduleWeeklyFields = document.getElementById('scheduleWeeklyFields');
+
+  const updateScheduleTypeVisibility = () => {
+    const type = scheduleTypeSelect.value;
+    if (scheduleOneOffFields) {
+      scheduleOneOffFields.classList.toggle('hidden', type !== 'one_off');
+    }
+    if (scheduleIntervalFields) {
+      scheduleIntervalFields.classList.toggle('hidden', type !== 'interval');
+    }
+    if (scheduleWeeklyFields) {
+      scheduleWeeklyFields.classList.toggle('hidden', type !== 'weekly');
+    }
+  };
+
+  scheduleTypeSelect.addEventListener('change', updateScheduleTypeVisibility);
+  updateScheduleTypeVisibility();
+
+  createBtn.addEventListener('click', async () => {
+    await populateScheduleConfigNames();
+    openScheduleModal();
+  });
+
+  scheduleModalClose?.addEventListener('click', () => {
+    scheduleModal.classList.add('hidden');
+  });
+
+  scheduleCancelBtn?.addEventListener('click', () => {
+    scheduleModal.classList.add('hidden');
+  });
+
+  scheduleModal.addEventListener('click', (e) => {
+    if (e.target.id === 'scheduleModal') {
+      scheduleModal.classList.add('hidden');
+    }
+  });
+
+  scheduleForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await saveScheduleFromForm();
+  });
+
+  // Delegate actions from schedules table
+  const schedulesTable = document.getElementById('schedulesTable');
+  if (schedulesTable) {
+    schedulesTable.addEventListener('click', async (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const action = target.getAttribute('data-action');
+      const id = target.getAttribute('data-id');
+      if (!action || !id) return;
+
+      if (action === 'edit-schedule') {
+        await populateScheduleConfigNames();
+        const schedule = schedulesCache.find((s) => s.id === id);
+        if (schedule) {
+          openScheduleModal(schedule);
+        }
+      } else if (action === 'toggle-schedule') {
+        const schedule = schedulesCache.find((s) => s.id === id);
+        if (!schedule) return;
+        const newEnabled = !schedule.enabled;
+        try {
+          await api.toggleSchedule(id, newEnabled);
+          await loadSchedules();
+        } catch (error) {
+          showAlert('Failed to toggle schedule: ' + error.message, 'error');
+        }
+      } else if (action === 'delete-schedule') {
+        if (!confirm('Are you sure you want to delete this schedule?')) {
+          return;
+        }
+        try {
+          await api.deleteSchedule(id);
+          await loadSchedules();
+        } catch (error) {
+          showAlert('Failed to delete schedule: ' + error.message, 'error');
+        }
+      }
+    });
+  }
+}
+
+async function populateScheduleConfigNames() {
+  try {
+    const result = await api.getAllEmailClientConfigs();
+    const configs = result.configs || {};
+    const current = result.current;
+    const select = document.getElementById('scheduleConfigName');
+    if (!select) return;
+
+    select.innerHTML =
+      '<option value=\"\">Use current active configuration</option>';
+    Object.keys(configs)
+      .sort()
+      .forEach((name) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name + (current === name ? ' (Active)' : '');
+        select.appendChild(opt);
+      });
+  } catch (error) {
+    console.error('Failed to load configs for schedules:', error);
+  }
+}
+
+function openScheduleModal(schedule = null) {
+  const modal = document.getElementById('scheduleModal');
+  const title = document.getElementById('scheduleModalTitle');
+  const idInput = document.getElementById('scheduleId');
+  const nameInput = document.getElementById('scheduleName');
+  const emailTypeSelect = document.getElementById('scheduleEmailType');
+  const recipientsInput = document.getElementById('scheduleRecipients');
+  const countInput = document.getElementById('scheduleCount');
+  const configSelect = document.getElementById('scheduleConfigName');
+  const typeSelect = document.getElementById('scheduleType');
+  const oneOffInput = document.getElementById('scheduleOneOffDateTime');
+  const intervalHoursInput = document.getElementById('scheduleIntervalHours');
+  const weeklyTimeInput = document.getElementById('scheduleWeeklyTime');
+
+  const weekdayCheckboxes = Array.from(
+    document.querySelectorAll('.scheduleWeekday')
+  );
+
+  if (!modal || !title) return;
+
+  if (schedule) {
+    title.textContent = 'Edit Schedule';
+    idInput.value = schedule.id || '';
+    nameInput.value = schedule.name || '';
+    emailTypeSelect.value = schedule.email_type || 'phishing';
+    recipientsInput.value = Array.isArray(schedule.recipients)
+      ? schedule.recipients.join(', ')
+      : '';
+    countInput.value = schedule.count || 1;
+    if (configSelect) {
+      configSelect.value = schedule.config_name || '';
+    }
+    typeSelect.value = schedule.schedule_type || 'one_off';
+    if (schedule.schedule_type === 'one_off' && schedule.next_run_utc) {
+      // Convert ISO string to datetime-local value
+      const dt = new Date(schedule.next_run_utc);
+      const local = new Date(
+        dt.getTime() - dt.getTimezoneOffset() * 60000
+      ).toISOString();
+      oneOffInput.value = local.substring(0, 16);
+    } else {
+      oneOffInput.value = '';
+    }
+    intervalHoursInput.value = schedule.interval_hours || 24;
+    const weeklyDays = Array.isArray(schedule.weekly_days)
+      ? schedule.weekly_days
+      : [];
+    weekdayCheckboxes.forEach((cb) => {
+      cb.checked = weeklyDays.includes(cb.value);
+    });
+    weeklyTimeInput.value = schedule.time_of_day_local || '09:00';
+  } else {
+    title.textContent = 'Create Schedule';
+    idInput.value = '';
+    nameInput.value = '';
+    emailTypeSelect.value = 'phishing';
+    recipientsInput.value =
+      defaultRecipients.length > 0 ? defaultRecipients.join(', ') : '';
+    countInput.value = 1;
+    if (configSelect) {
+      configSelect.value = '';
+    }
+    typeSelect.value = 'one_off';
+    oneOffInput.value = '';
+    intervalHoursInput.value = 24;
+    weekdayCheckboxes.forEach((cb) => {
+      cb.checked = false;
+    });
+    weeklyTimeInput.value = '09:00';
+  }
+
+  const scheduleTypeSelect = document.getElementById('scheduleType');
+  if (scheduleTypeSelect) {
+    const event = new Event('change');
+    scheduleTypeSelect.dispatchEvent(event);
+  }
+
+  modal.classList.remove('hidden');
+}
+
+async function saveScheduleFromForm() {
+  const id = document.getElementById('scheduleId').value || null;
+  const name = document.getElementById('scheduleName').value.trim();
+  const emailType = document.getElementById('scheduleEmailType').value;
+  const recipientsStr = document
+    .getElementById('scheduleRecipients')
+    .value.trim();
+  const count = parseInt(document.getElementById('scheduleCount').value) || 1;
+  const configName = document.getElementById('scheduleConfigName').value || null;
+  const scheduleType = document.getElementById('scheduleType').value;
+
+  if (!name) {
+    showAlert('Schedule name is required', 'error');
+    return;
+  }
+
+  const recipients = recipientsStr
+    .split(',')
+    .map((r) => r.trim())
+    .filter((r) => r);
+  if (!recipients.length) {
+    showAlert('At least one recipient is required', 'error');
+    return;
+  }
+
+  const schedule = {
+    id: id || undefined,
+    name,
+    email_type: emailType,
+    recipients,
+    count,
+    config_name: configName || undefined,
+    schedule_type: scheduleType,
+    enabled: true,
+  };
+
+  if (scheduleType === 'interval') {
+    const intervalHours =
+      parseInt(document.getElementById('scheduleIntervalHours').value) || 24;
+    schedule.interval_hours = intervalHours;
+  } else if (scheduleType === 'weekly') {
+    const weeklyTime = document.getElementById('scheduleWeeklyTime').value;
+    const weekdayCheckboxes = Array.from(
+      document.querySelectorAll('.scheduleWeekday')
+    );
+    const weeklyDays = weekdayCheckboxes
+      .filter((cb) => cb.checked)
+      .map((cb) => cb.value);
+    if (!weeklyDays.length) {
+      showAlert('Please select at least one weekday for a weekly schedule', 'error');
+      return;
+    }
+    schedule.weekly_days = weeklyDays;
+    schedule.time_of_day_local = weeklyTime || '09:00';
+  } else if (scheduleType === 'one_off') {
+    const oneOffValue = document
+      .getElementById('scheduleOneOffDateTime')
+      .value.trim();
+    if (!oneOffValue) {
+      showAlert(
+        'Please choose a run date and time for a one-off schedule.',
+        'error'
+      );
+      return;
+    }
+    // Convert local datetime-local value to UTC ISO string
+    const local = new Date(oneOffValue);
+    const utc = new Date(local.getTime() - local.getTimezoneOffset() * 60000);
+    schedule.next_run_utc = utc.toISOString();
+  }
+
+  try {
+    await api.saveSchedule(schedule);
+    showAlert('Schedule saved successfully', 'success');
+    document.getElementById('scheduleModal').classList.add('hidden');
+    await loadSchedules();
+  } catch (error) {
+    showAlert('Failed to save schedule: ' + error.message, 'error');
   }
 }
 

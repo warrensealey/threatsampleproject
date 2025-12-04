@@ -1,6 +1,6 @@
 # Email Data Generation Project
 
-**Version 1.3.0**
+**Version 1.4.0**
 
 Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
@@ -139,7 +139,11 @@ threatsampleproject/
 
 ## Version
 
-Current version: **1.3.0**
+Current version: **1.4.0**
+
+### What's new in 1.4.0
+
+- **Scheduled Email Sending**: Added a **Scheduled Sends** panel on the dashboard where you can create one-off, interval (every N hours), or weekly recurring schedules for sending test emails. Schedules run automatically inside the application while the Docker container is up, with proper timezone handling and automatic failure detection (schedules auto-disable after 3 consecutive failures).
 
 ### What's new in 1.3.0
 

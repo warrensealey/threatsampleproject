@@ -20,17 +20,24 @@ from backend.config import (
     get_templates,
     save_template,
     delete_template,
+    get_schedules,
+    upsert_schedule,
+    delete_schedule,
+    set_schedule_enabled,
+    get_timezone,
+    set_timezone,
 )
 from backend.email_generator import EmailGenerator
+from backend.scheduler import run_due_schedules
 import logging
 
 logger = logging.getLogger(__name__)
 
-api = Blueprint('api', __name__)
+api = Blueprint("api", __name__)
 email_generator = EmailGenerator()
 
 
-@api.route('/config', methods=['GET'])
+@api.route("/config", methods=["GET"])
 def get_config():
     """Get current configuration."""
     try:
@@ -47,7 +54,7 @@ def get_config():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/config', methods=['POST'])
+@api.route("/config", methods=["POST"])
 def update_config():
     """Update configuration."""
     try:
@@ -68,7 +75,7 @@ def update_config():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/email/config', methods=['GET'])
+@api.route("/email/config", methods=["GET"])
 def get_email_client_config_route():
     """Get email client configuration.
 
@@ -88,7 +95,7 @@ def get_email_client_config_route():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/email/config', methods=['POST'])
+@api.route("/email/config", methods=["POST"])
 def update_email_client_config_route():
     """Update email client configuration.
 
@@ -113,7 +120,7 @@ def update_email_client_config_route():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/email/configs', methods=['GET'])
+@api.route("/email/configs", methods=["GET"])
 def get_all_email_client_configs_route():
     """Get all email client configurations (names and metadata, no passwords)."""
     try:
@@ -128,7 +135,7 @@ def get_all_email_client_configs_route():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/email/config/<config_name>', methods=['DELETE'])
+@api.route("/email/config/<config_name>", methods=["DELETE"])
 def delete_email_client_config_route(config_name):
     """Delete an email client configuration."""
     try:
@@ -142,7 +149,7 @@ def delete_email_client_config_route(config_name):
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/email/config/current', methods=['GET'])
+@api.route("/email/config/current", methods=["GET"])
 def get_current_email_client_route():
     """Get the name of the current active email client configuration."""
     try:
@@ -153,7 +160,7 @@ def get_current_email_client_route():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/email/config/current', methods=['POST'])
+@api.route("/email/config/current", methods=["POST"])
 def set_current_email_client_route():
     """Set the current active email client configuration.
 
@@ -177,7 +184,7 @@ def set_current_email_client_route():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/templates', methods=['GET'])
+@api.route("/templates", methods=["GET"])
 def list_templates():
     """List stored email templates.
 
@@ -193,7 +200,7 @@ def list_templates():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/templates', methods=['POST'])
+@api.route("/templates", methods=["POST"])
 def upsert_template():
     """Create or update a named email template.
 
@@ -227,7 +234,7 @@ def upsert_template():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/templates/<template_type>/<name>', methods=['DELETE'])
+@api.route("/templates/<template_type>/<name>", methods=["DELETE"])
 def delete_template_route(template_type, name):
     """Delete a named email template."""
     try:
@@ -240,7 +247,7 @@ def delete_template_route(template_type, name):
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/send/phishing', methods=['POST'])
+@api.route("/send/phishing", methods=["POST"])
 def send_phishing():
     """Send phishing test emails."""
     try:
@@ -259,7 +266,7 @@ def send_phishing():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/send/eicar', methods=['POST'])
+@api.route("/send/eicar", methods=["POST"])
 def send_eicar():
     """Send EICAR test emails."""
     try:
@@ -277,7 +284,7 @@ def send_eicar():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/send/cynic', methods=['POST'])
+@api.route("/send/cynic", methods=["POST"])
 def send_cynic():
     """Send Cynic test emails."""
     try:
@@ -295,7 +302,7 @@ def send_cynic():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/send/gtube', methods=['POST'])
+@api.route("/send/gtube", methods=["POST"])
 def send_gtube():
     """Send GTUBE spam-test emails."""
     try:
@@ -313,7 +320,7 @@ def send_gtube():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/send/custom', methods=['POST'])
+@api.route("/send/custom", methods=["POST"])
 def send_custom():
     """Send custom emails with configurable fields."""
     try:
@@ -352,7 +359,7 @@ def send_custom():
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/test/email', methods=['POST'])
+@api.route("/test/email", methods=["POST"])
 def test_email_config():
     """Test email service configuration by sending a test email."""
     try:
@@ -542,7 +549,7 @@ Possible Causes:
         return jsonify({"error": str(e)}), 500
 
 
-@api.route('/history', methods=['GET'])
+@api.route("/history", methods=["GET"])
 def get_history_route():
     """Get email sending history."""
     try:
@@ -551,4 +558,129 @@ def get_history_route():
     except Exception as e:
         logger.error(f"Error getting history: {e}")
         return jsonify({"error": str(e)}), 500
+
+
+# ---------------------------------------------------------------------------
+# Schedules and scheduler control
+# ---------------------------------------------------------------------------
+
+
+@api.route("/schedules", methods=["GET"])
+def list_schedules():
+    """List all configured schedules along with the current timezone."""
+    try:
+        schedules = get_schedules()
+        tz = get_timezone()
+        return jsonify({"schedules": schedules, "timezone": tz})
+    except Exception as e:
+        logger.error(f"Error getting schedules: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route("/schedules", methods=["POST"])
+def upsert_schedule_route():
+    """Create or update a schedule.
+
+    If the body includes an \"id\", that schedule will be updated; otherwise a new
+    schedule will be created and a new id returned.
+    """
+    try:
+        data = request.json or {}
+
+        # Basic required fields
+        name = data.get("name")
+        email_type = data.get("email_type")
+        recipients = data.get("recipients")
+        schedule_type = data.get("schedule_type")
+
+        if not name:
+            return jsonify({"error": "name is required"}), 400
+        if not email_type:
+            return jsonify({"error": "email_type is required"}), 400
+        if not recipients or not isinstance(recipients, list):
+            return jsonify({"error": "recipients must be a non-empty list"}), 400
+        if not schedule_type:
+            return jsonify({"error": "schedule_type is required"}), 400
+
+        # Allow frontend to pass other schedule fields (count, interval_hours, etc.)
+        schedule = data.copy()
+        schedule.setdefault("enabled", True)
+
+        stored = upsert_schedule(schedule)
+        return jsonify({"success": True, "schedule": stored})
+    except Exception as e:
+        logger.error(f"Error saving schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route("/schedules/<schedule_id>", methods=["DELETE"])
+def delete_schedule_route(schedule_id):
+    """Delete a schedule by id."""
+    try:
+        success = delete_schedule(schedule_id)
+        if success:
+            return jsonify({"success": True})
+        return jsonify({"error": "Schedule not found"}), 404
+    except Exception as e:
+        logger.error(f"Error deleting schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route("/schedules/<schedule_id>/toggle", methods=["POST"])
+def toggle_schedule_route(schedule_id):
+    """Enable or disable a schedule."""
+    try:
+        data = request.json or {}
+        enabled = data.get("enabled")
+        if enabled is None:
+            return jsonify({"error": "enabled is required"}), 400
+        success = set_schedule_enabled(schedule_id, bool(enabled))
+        if success:
+            return jsonify({"success": True, "enabled": bool(enabled)})
+        return jsonify({"error": "Schedule not found"}), 404
+    except Exception as e:
+        logger.error(f"Error toggling schedule: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route("/schedules/run-due", methods=["POST"])
+def run_due_schedules_route():
+    """Manually trigger evaluation of due schedules.
+
+    This is primarily intended for external cron-style triggers.
+    """
+    try:
+        run_due_schedules()
+        return jsonify({"success": True})
+    except Exception as e:
+        logger.error(f"Error running due schedules: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route("/timezone", methods=["GET"])
+def get_timezone_route():
+    """Return the current application timezone setting."""
+    try:
+        return jsonify({"timezone": get_timezone()})
+    except Exception as e:
+        logger.error(f"Error getting timezone: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route("/timezone", methods=["POST"])
+def set_timezone_route():
+    """Update the application timezone used for schedule display/calculations."""
+    try:
+        data = request.json or {}
+        tz = data.get("timezone")
+        if not tz:
+            return jsonify({"error": "timezone is required"}), 400
+        success = set_timezone(tz)
+        if not success:
+            return jsonify({"error": "Invalid timezone"}), 400
+        return jsonify({"success": True, "timezone": tz})
+    except Exception as e:
+        logger.error(f"Error setting timezone: {e}")
+        return jsonify({"error": str(e)}), 500
+
 

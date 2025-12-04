@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Version 1.3.0**
+**Version 1.4.0**
 
 Comprehensive documentation for the Email Data Generation application.
 
@@ -408,6 +408,22 @@ The application supports `.env` file for environment-specific configuration (via
    - Connection details modal shows full connection information
    - Success/failure status displayed
    - Email history updated automatically
+
+### Scheduled Sending (Beta)
+
+The dashboard includes a **Scheduled Sends** panel that allows you to define basic schedules for sending test emails:
+
+- **Schedule types**:
+  - One-off: run once at a specific future date/time (stored as UTC based on your browser’s local time).
+  - Interval: run every N hours.
+  - Weekly: run on selected weekdays at a specific local time.
+- **Email types**:
+  - Phishing, EICAR, Cynic, GTUBE, and Custom (for custom, the content is based on your configured fields).
+- **Execution model**:
+  - Schedules are evaluated and executed by an in-process scheduler that runs inside the Docker container.
+  - Jobs only run while the container is up; windows of downtime are not backfilled (the next run is computed from the current time).
+  - Each schedule can be bound to a specific email configuration (or use the current active one).
+  - After repeated failures (for example, three consecutive errors), a schedule is automatically disabled and marked in the UI.
 
 ### Testing Email Configuration
 

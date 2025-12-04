@@ -54,6 +54,20 @@
                 <p class="loading">Loading history...</p>
             </div>
         </div>
+
+        <div class="card">
+            <h2>Scheduled Sends (Beta)</h2>
+            <p>
+                Configure one-off or recurring email sends. Schedules run inside the application
+                while the Docker container is up.
+            </p>
+            <div class="form-group">
+                <button class="btn btn-primary" id="createScheduleBtn">Create Schedule</button>
+            </div>
+            <div id="schedulesTable">
+                <p class="loading">Loading schedules...</p>
+            </div>
+        </div>
     </div>
 
     <!-- Email Send Result Modal -->
@@ -161,6 +175,85 @@
                     <button type="submit" class="btn btn-primary">Send Email</button>
                     <button type="button" class="btn btn-secondary" id="saveCustomTemplateBtn">Save as Template</button>
                     <button type="button" class="btn btn-secondary" id="cancelCustomEmailBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Schedule Create/Edit Modal -->
+    <div id="scheduleModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 720px;">
+            <span class="modal-close" id="scheduleModalClose">&times;</span>
+            <h2 id="scheduleModalTitle">Create Schedule</h2>
+            <form id="scheduleForm">
+                <input type="hidden" id="scheduleId">
+                <div class="form-group">
+                    <label for="scheduleName">Name:</label>
+                    <input type="text" id="scheduleName" required placeholder="e.g., Monday phishing test">
+                </div>
+                <div class="form-group">
+                    <label for="scheduleEmailType">Email Type:</label>
+                    <select id="scheduleEmailType" required>
+                        <option value="phishing">Phishing</option>
+                        <option value="eicar">EICAR</option>
+                        <option value="cynic">Cynic</option>
+                        <option value="gtube">GTUBE</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="scheduleRecipients">Recipients (comma-separated):</label>
+                    <input type="text" id="scheduleRecipients" required placeholder="email1@example.com, email2@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="scheduleCount">Count:</label>
+                    <input type="number" id="scheduleCount" value="1" min="1" style="width: 100px;">
+                </div>
+                <div class="form-group">
+                    <label for="scheduleConfigName">Email Configuration:</label>
+                    <select id="scheduleConfigName">
+                        <option value="">Use current active configuration</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="scheduleType">Schedule Type:</label>
+                    <select id="scheduleType" required>
+                        <option value="one_off">One-off</option>
+                        <option value="interval">Every N hours</option>
+                        <option value="weekly">Weekly</option>
+                    </select>
+                </div>
+                <div id="scheduleOneOffFields" class="form-group">
+                    <label>Run at (local time):</label>
+                    <input type="datetime-local" id="scheduleOneOffDateTime">
+                </div>
+                <div id="scheduleIntervalFields" class="form-group hidden">
+                    <label for="scheduleIntervalHours">Every N hours:</label>
+                    <input type="number" id="scheduleIntervalHours" value="24" min="1" style="width: 120px;">
+                </div>
+                <div id="scheduleWeeklyFields" class="form-group hidden">
+                    <label>Days of week:</label>
+                    <div class="weekday-checkboxes">
+                        <label><input type="checkbox" value="MON" class="scheduleWeekday"> Mon</label>
+                        <label><input type="checkbox" value="TUE" class="scheduleWeekday"> Tue</label>
+                        <label><input type="checkbox" value="WED" class="scheduleWeekday"> Wed</label>
+                        <label><input type="checkbox" value="THU" class="scheduleWeekday"> Thu</label>
+                        <label><input type="checkbox" value="FRI" class="scheduleWeekday"> Fri</label>
+                        <label><input type="checkbox" value="SAT" class="scheduleWeekday"> Sat</label>
+                        <label><input type="checkbox" value="SUN" class="scheduleWeekday"> Sun</label>
+                    </div>
+                    <label for="scheduleWeeklyTime">Time of day (local):</label>
+                    <input type="time" id="scheduleWeeklyTime" value="09:00">
+                </div>
+                <div class="form-group" id="scheduleCustomFields" class="hidden">
+                    <p style="font-size: 0.9em; color: #555;">
+                        For custom schedules, the subject/body/display name/attachment come from the
+                        most recently used Custom Email form values on the dashboard.
+                    </p>
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Save Schedule</button>
+                    <button type="button" class="btn btn-secondary" id="scheduleCancelBtn">Cancel</button>
                 </div>
             </form>
         </div>

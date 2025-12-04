@@ -5,19 +5,22 @@ Stores SMTP settings, email client settings, and email generation parameters.
 import json
 import os
 from pathlib import Path
+from typing import Any, Dict, List, Optional
+import uuid
 
 from backend.encryption import encrypt_value, decrypt_value, is_encrypted
 
 CONFIG_FILE = Path(__file__).parent.parent / "data" / "config.json"
 
-DEFAULT_CONFIG = {
+# Default configuration structure for the application.
+DEFAULT_CONFIG: Dict[str, Any] = {
     "smtp": {
         "server": "",
         "port": 587,
         "username": "",
         "password": "",
         "use_tls": True,
-        "use_ssl": False
+        "use_ssl": False,
     },
     "email_clients": {},
     "current_email_client": None,
@@ -28,8 +31,8 @@ DEFAULT_CONFIG = {
             "phishing": "Warning - Potentially Hazardous URL",
             "eicar": "EICAR Test File",
             "cynic": "This is a important top secret email!",
-            "gtube": "GTUBE Spam Test Email"
-        }
+            "gtube": "GTUBE Spam Test Email",
+        },
     },
     # Named email templates grouped by type, e.g.:
     # "templates": {
@@ -38,11 +41,21 @@ DEFAULT_CONFIG = {
     #   }
     # }
     "templates": {},
-    "history": []
+    # App-wide local timezone identifier for scheduled jobs and display.
+    # All canonical timestamps are stored in UTC; this is used for
+    # converting to/from local time when presenting to users.
+    "timezone": "Europe/London",
+    # List of scheduled send definitions. Each item is a dict with at least:
+    #   id, name, enabled, email_type, recipients, count, schedule_type,
+    #   next_run_utc, config_name
+    # and optionally:
+    #   interval_hours, weekly_days, time_of_day_local, created_at, history, etc.
+    "schedules": [],
+    "history": [],
 }
 
 
-def load_config():
+def load_config() -> Dict[str, Any]:
     """Load configuration from JSON file."""
     if CONFIG_FILE.exists():
         try:
@@ -74,6 +87,33 @@ def load_config():
                 if "templates" not in config:
                     config["templates"] = {}
 
+                # Ensure timezone exists
+                if "timezone" not in config or not isinstance(
+                    config.get("timezone"), str
+                ):
+                    config["timezone"] = DEFAULT_CONFIG["timezone"]
+
+                # Ensure schedules exists and is a list
+                schedules = config.get("schedules")
+                if not isinstance(schedules, list):
+                    schedules = []
+                # Normalise basic schedule structure and ensure IDs
+                normalised_schedules: List[Dict[str, Any]] = []
+                for item in schedules:
+                    if not isinstance(item, dict):
+                        continue
+                    sched = item.copy()
+                    if not sched.get("id"):
+                        sched["id"] = str(uuid.uuid4())
+                    # Basic required keys with sane defaults
+                    sched.setdefault("enabled", True)
+                    sched.setdefault("email_type", "phishing")
+                    sched.setdefault("recipients", [])
+                    sched.setdefault("count", 1)
+                    sched.setdefault("schedule_type", "one_off")
+                    normalised_schedules.append(sched)
+                config["schedules"] = normalised_schedules
+
                 # Decrypt password fields (backward compatible with plain text)
                 smtp_cfg = config.get("smtp") or {}
                 pwd = smtp_cfg.get("password")
@@ -104,7 +144,7 @@ def load_config():
         return DEFAULT_CONFIG.copy()
 
 
-def save_config(config):
+def save_config(config: Dict[str, Any]) -> bool:
     """Save configuration to JSON file."""
     try:
         CONFIG_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -136,13 +176,13 @@ def save_config(config):
         return False
 
 
-def get_smtp_config():
+def get_smtp_config() -> Dict[str, Any]:
     """Get SMTP configuration."""
     config = load_config()
     return config.get("smtp", {})
 
 
-def get_email_client_config(config_name=None):
+def get_email_client_config(config_name: Optional[str] = None) -> Dict[str, Any]:
     """Get email client configuration.
 
     Args:
@@ -163,13 +203,13 @@ def get_email_client_config(config_name=None):
     return {}
 
 
-def get_email_generation_config():
+def get_email_generation_config() -> Dict[str, Any]:
     """Get email generation configuration."""
     config = load_config()
     return config.get("email_generation", {})
 
 
-def get_templates(template_type=None):
+def get_templates(template_type: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
     """Get stored email templates.
 
     Args:
@@ -189,7 +229,7 @@ def get_templates(template_type=None):
     return {t_type: (t_map or {}).copy() for t_type, t_map in templates.items()}
 
 
-def save_template(template_type, name, template_data):
+def save_template(template_type: str, name: str, template_data: Dict[str, Any]) -> bool:
     """Save or update a named template for a given type.
 
     Args:
@@ -213,7 +253,7 @@ def save_template(template_type, name, template_data):
     return save_config(config)
 
 
-def delete_template(template_type, name):
+def delete_template(template_type: str, name: str) -> bool:
     """Delete a named template.
 
     Args:
@@ -242,14 +282,16 @@ def delete_template(template_type, name):
     return save_config(config)
 
 
-def update_smtp_config(smtp_config):
+def update_smtp_config(smtp_config: Dict[str, Any]) -> bool:
     """Update SMTP configuration."""
     config = load_config()
     config["smtp"] = smtp_config
     return save_config(config)
 
 
-def update_email_client_config(email_client_config, config_name=None):
+def update_email_client_config(
+    email_client_config: Dict[str, Any], config_name: Optional[str] = None
+) -> bool:
     """Update email client configuration.
 
     Args:
@@ -275,7 +317,7 @@ def update_email_client_config(email_client_config, config_name=None):
     return save_config(config)
 
 
-def get_all_email_client_configs():
+def get_all_email_client_configs() -> Dict[str, Dict[str, Any]]:
     """Get all email client configurations (without passwords).
 
     Returns:
@@ -294,7 +336,9 @@ def get_all_email_client_configs():
     return result
 
 
-def save_email_client_config(config_name, email_client_config):
+def save_email_client_config(
+    config_name: str, email_client_config: Dict[str, Any]
+) -> bool:
     """Save a named email client configuration.
 
     Args:
@@ -318,7 +362,7 @@ def save_email_client_config(config_name, email_client_config):
     return save_config(config)
 
 
-def delete_email_client_config(config_name):
+def delete_email_client_config(config_name: str) -> bool:
     """Delete an email client configuration.
 
     Args:
@@ -345,7 +389,7 @@ def delete_email_client_config(config_name):
     return save_config(config)
 
 
-def set_current_email_client(config_name):
+def set_current_email_client(config_name: str) -> bool:
     """Set the current active email client configuration.
 
     Args:
@@ -364,7 +408,7 @@ def set_current_email_client(config_name):
     return save_config(config)
 
 
-def get_current_email_client_name():
+def get_current_email_client_name() -> Optional[str]:
     """Get the name of the current active email client configuration.
 
     Returns:
@@ -374,14 +418,14 @@ def get_current_email_client_name():
     return config.get("current_email_client")
 
 
-def update_email_generation_config(email_gen_config):
+def update_email_generation_config(email_gen_config: Dict[str, Any]) -> bool:
     """Update email generation configuration."""
     config = load_config()
     config["email_generation"] = email_gen_config
     return save_config(config)
 
 
-def add_history_entry(entry):
+def add_history_entry(entry: Dict[str, Any]) -> bool:
     """Add an entry to the email sending history."""
     config = load_config()
     if "history" not in config:
@@ -392,8 +436,121 @@ def add_history_entry(entry):
     return save_config(config)
 
 
-def get_history():
+def get_history() -> List[Dict[str, Any]]:
     """Get email sending history."""
     config = load_config()
     return config.get("history", [])
+
+
+# ---------------------------------------------------------------------------
+# Schedule helpers
+# ---------------------------------------------------------------------------
+
+def get_timezone() -> str:
+    """Return the configured application timezone identifier."""
+    config = load_config()
+    tz = config.get("timezone")
+    if isinstance(tz, str) and tz:
+        return tz
+    return DEFAULT_CONFIG["timezone"]
+
+
+def set_timezone(tz: str) -> bool:
+    """Update the application timezone identifier."""
+    if not isinstance(tz, str) or not tz:
+        return False
+    config = load_config()
+    config["timezone"] = tz
+    return save_config(config)
+
+
+def get_schedules() -> List[Dict[str, Any]]:
+    """Return the list of configured schedules."""
+    config = load_config()
+    schedules = config.get("schedules") or []
+    if not isinstance(schedules, list):
+        return []
+    # Return shallow copies so callers don't accidentally mutate in-memory config
+    return [s.copy() for s in schedules if isinstance(s, dict)]
+
+
+def _find_schedule_index(schedules: List[Dict[str, Any]], schedule_id: str) -> int:
+    for idx, sched in enumerate(schedules):
+        if not isinstance(sched, dict):
+            continue
+        if sched.get("id") == schedule_id:
+            return idx
+    return -1
+
+
+def upsert_schedule(schedule: Dict[str, Any]) -> Dict[str, Any]:
+    """Create or update a schedule.
+
+    If schedule['id'] is missing, a new schedule is created.
+    Returns the stored schedule (with id).
+    """
+    if not isinstance(schedule, dict):
+        raise ValueError("schedule must be a dict")
+
+    config = load_config()
+    schedules = config.get("schedules")
+    if not isinstance(schedules, list):
+        schedules = []
+
+    sched = schedule.copy()
+    if not sched.get("id"):
+        sched["id"] = str(uuid.uuid4())
+
+    # Ensure some required keys exist to keep data shape predictable
+    sched.setdefault("enabled", True)
+    sched.setdefault("email_type", "phishing")
+    sched.setdefault("recipients", [])
+    sched.setdefault("count", 1)
+    sched.setdefault("schedule_type", "one_off")
+
+    idx = _find_schedule_index(schedules, sched["id"])
+    if idx >= 0:
+        schedules[idx] = sched
+    else:
+        schedules.append(sched)
+
+    config["schedules"] = schedules
+    save_config(config)
+    return sched
+
+
+def delete_schedule(schedule_id: str) -> bool:
+    """Delete a schedule by id."""
+    if not schedule_id:
+        return False
+    config = load_config()
+    schedules = config.get("schedules")
+    if not isinstance(schedules, list):
+        return False
+    idx = _find_schedule_index(schedules, schedule_id)
+    if idx < 0:
+        return False
+    del schedules[idx]
+    config["schedules"] = schedules
+    return save_config(config)
+
+
+def set_schedule_enabled(schedule_id: str, enabled: bool) -> bool:
+    """Enable or disable a schedule by id."""
+    if not schedule_id:
+        return False
+    config = load_config()
+    schedules = config.get("schedules")
+    if not isinstance(schedules, list):
+        return False
+    idx = _find_schedule_index(schedules, schedule_id)
+    if idx < 0:
+        return False
+    sched = schedules[idx]
+    if not isinstance(sched, dict):
+        return False
+    sched["enabled"] = bool(enabled)
+    schedules[idx] = sched
+    config["schedules"] = schedules
+    return save_config(config)
 
