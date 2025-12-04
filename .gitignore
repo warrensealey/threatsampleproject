@@ -38,6 +38,7 @@ logs/
 data/config.json
 data/logs/
 data/.encryption_key
+data/.scheduler.lock
 *.7z
 *.vbs
 eicar.com
