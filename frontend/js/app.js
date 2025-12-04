@@ -1133,10 +1133,8 @@ async function loadTemplateList() {
       }
       html += `<h3 style="margin-top: 10px;">${type} templates</h3>`;
       html += '<ul style="list-style: none; padding-left: 0;">';
-      names
-        .sort()
-        .forEach((name) => {
-          html += `<li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee;">
+      names.sort().forEach((name) => {
+        html += `<li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee;">
               <span><strong>${name}</strong></span>
               <button class="btn btn-secondary template-delete-btn"
                       style="padding: 4px 8px; font-size: 0.85em;"
@@ -1145,11 +1143,12 @@ async function loadTemplateList() {
                 Delete
               </button>
             </li>`;
-        });
+      });
       html += '</ul>';
     });
 
-    container.innerHTML = html || '<p class="loading">No templates saved yet.</p>';
+    container.innerHTML =
+      html || '<p class="loading">No templates saved yet.</p>';
 
     // Attach delete handlers
     container.querySelectorAll('.template-delete-btn').forEach((btn) => {

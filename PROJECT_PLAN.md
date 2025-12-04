@@ -1,6 +1,6 @@
 # Email Data Generation Project - Complete Plan
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 **Repository:** `/Users/warrensealey/threatsampleproject/`
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
@@ -51,7 +51,7 @@ threatsampleproject/
 └── PROJECT_PLAN.md         # This file
 ```
 
-## Current Features (Version 1.2.0)
+## Current Features (Version 1.3.0)
 
 ### Email Types
 
@@ -82,7 +82,8 @@ threatsampleproject/
 ### User Interface
 
 - Dashboard with email sending options
-- Configuration page with provider selection
+- Custom email modal with support for saving and applying **custom templates**.
+- Configuration page with provider selection and automatic IMAP/SMTP preset filling when a provider is chosen.
 - Detailed connection information display
 - Email sending history view
 - Test email configuration validation
@@ -235,45 +236,32 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.
 
 ### High Priority
 
-1. **Configuration Encryption**
-   - Implement Fernet encryption for password fields
-   - Add encryption key management
-   - Update documentation
-
-### Medium Priority
-
-2. **Email Template Customization**
-
-   - User-defined email templates
-   - Template library
-   - Template sharing
-
-3. **Scheduled Email Sending**
+1. **Scheduled Email Sending**
 
    - Cron-like scheduling
    - Recurring email sends
    - Schedule management UI
 
-4. **Email Statistics and Reporting**
+2. **Email Statistics and Reporting**
    - Success/failure rates
    - Provider performance metrics
    - Historical trends
 
 ### Low Priority
 
-5. **Email Search Functionality**
+3. **Email Search Functionality**
 
    - Search sent emails
    - Filter by type, date, status
    - Export capabilities
 
-6. **Attachment Download Support**
+4. **Attachment Download Support**
 
    - Download sent attachments
    - Attachment library
    - Attachment preview
 
-7. **Advanced Configuration Options**
+5. **Advanced Configuration Options**
    - Email rate limiting
    - Retry policies
    - Custom SMTP headers
@@ -307,7 +295,12 @@ docker-compose up
 
 ## Version History
 
-### Version 1.2.0 (Current)
+### Version 1.3.0 (Current)
+
+- Implemented **email template customization** on the dashboard, allowing users to save, reuse, and manage custom email templates (subject, body, display name, attachment type).
+- Fixed and hardened the **Configuration** page JavaScript so that selecting an email provider reliably auto-populates IMAP/SMTP fields, eliminating prior issues caused by script errors.
+
+### Version 1.2.0
 
 - Switched Dockerized deployment to use Gunicorn (4 workers) instead of the Flask development server for improved stability and concurrent request handling.
 - Added a timeout + retry wrapper around all frontend API calls to reduce transient “Failed to fetch” errors when Docker or network hiccups occur.

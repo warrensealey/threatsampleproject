@@ -1,6 +1,6 @@
 # Email Data Generation Project
 
-**Version 1.2.0**
+**Version 1.3.0**
 
 Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
@@ -139,7 +139,12 @@ threatsampleproject/
 
 ## Version
 
-Current version: **1.2.0**
+Current version: **1.3.0**
+
+### What's new in 1.3.0
+
+- Added **email template customization** support so you can save reusable custom email templates (subject, body, display name, attachment type) and quickly re-apply them from the dashboard.
+- Improved the **Configuration** page so selecting an email provider from the dropdown reliably auto-populates IMAP/SMTP server settings, with the underlying JavaScript errors fixed.
 
 ### What's new in 1.2.0
 

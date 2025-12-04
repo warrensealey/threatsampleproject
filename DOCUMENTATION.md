@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Version 1.2.0**
+**Version 1.3.0**
 
 Comprehensive documentation for the Email Data Generation application.
 
@@ -327,6 +327,10 @@ Custom emails allow full control over email content and appearance for flexible 
   - `.bat`: Harmless batch script file
 - Multiple recipients support
 - Configurable email count
+- **Custom email templates**:
+  - Save commonly used combinations of subject, body, display name, and attachment type as named templates.
+  - Select a template from the dropdown in the Custom Email modal to instantly populate the form.
+  - Manage (list and delete) saved templates from the Configuration page.
 
 ## Configuration
 
@@ -410,15 +414,12 @@ The application supports `.env` file for environment-specific configuration (via
 1. **Navigate to Configuration**: http://localhost:8080/config
 
 2. **Configure Email Provider**:
-   - **⚠️ STRONGLY RECOMMENDED: Select GMX** from the dropdown (pre-selected by default)
-   - GMX settings have been tested and verified to work
-   - Enter your GMX email address as username
-   - Enter your GMX account password
-   - Server settings will auto-populate for GMX:
-     - IMAP: `imap.gmx.com:993`
-     - SMTP: `mail.gmx.com:587`
+   - **⚠️ STRONGLY RECOMMENDED: Select GMX** from the dropdown (pre-selected by default).
+   - GMX settings have been tested and verified to work.
+   - When you change the **Email Provider** dropdown, the IMAP/SMTP server fields and ports are automatically populated with sensible defaults for that provider.
+   - Enter your email address as username and the appropriate password or app-specific password for the selected provider.
 
-   **Note**: Other providers (Gmail, Yahoo, etc.) are still in development and may require troubleshooting.
+   **Note**: Non-GMX providers (Gmail, Yahoo, etc.) are still in development and may require troubleshooting, but the UI will still auto-fill the standard server/port values.
 
 3. **Test Configuration**:
    - Click "Test Email Configuration"
