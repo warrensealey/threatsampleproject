@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Version 1.1.0**
+**Version 1.2.0**
 
 Comprehensive documentation for the Email Data Generation application.
 
@@ -386,7 +386,7 @@ The application supports `.env` file for environment-specific configuration (via
 
 ### Sending Test Emails
 
-1. **Navigate to Dashboard**: http://localhost:5000
+1. **Navigate to Dashboard**: http://localhost:8080
 
 2. **Select Email Type**:
    - Click "Send Phishing Emails" for phishing tests
@@ -407,7 +407,7 @@ The application supports `.env` file for environment-specific configuration (via
 
 ### Testing Email Configuration
 
-1. **Navigate to Configuration**: http://localhost:5000/config
+1. **Navigate to Configuration**: http://localhost:8080/config
 
 2. **Configure Email Provider**:
    - **⚠️ STRONGLY RECOMMENDED: Select GMX** from the dropdown (pre-selected by default)
@@ -494,7 +494,7 @@ The application is containerized and available via Docker.
 ### GitHub Container Registry
 
 - **Image**: `ghcr.io/warrensealey/threatsampleproject:latest`
-- **Version Tags**: Available for each version (e.g., `1.0.0`)
+- **Version Tags**: Available for each version (e.g., `1.0.0`, `1.1.0`, `1.2.0`)
 - **Automated Builds**: On push to main branch via GitHub Actions
 
 ### Running with Docker
@@ -506,20 +506,21 @@ docker pull ghcr.io/warrensealey/threatsampleproject:latest
 # Run the container
 docker run -d \
   --name email-data-gen \
-  -p 5000:5000 \
+  -p 8080:5000 \
   -v $(pwd)/data:/app/data \
   ghcr.io/warrensealey/threatsampleproject:latest
 
 # Or use docker-compose
-docker-compose up -d
+docker compose up -d
 ```
 
 ### Docker Configuration
 
-- **Port**: 5000 (configurable via `-p` flag)
+- **Port**: 8080 on the host by default (mapped to 5000 in the container; configurable via `-p` flag)
 - **Data Persistence**: `data/` directory mounted as volume
 - **User**: Runs as non-root user for security
 - **Health Checks**: Included in docker-compose configuration
+- **Resource Limits**: Basic CPU and memory limits configured for the `email-data-gen` service in `docker-compose.yml`
 
 See [INSTALLATION.md](INSTALLATION.md) for detailed Docker setup instructions.
 

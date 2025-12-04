@@ -1022,7 +1022,11 @@ async function saveEmailClientConfig() {
   const configName = configNameInput.value.trim();
 
   if (!configName) {
-    showAlert('Please enter a configuration name', 'error');
+    showConfigSaveModal(
+      'Missing Configuration Name',
+      'Please enter a configuration name before saving.',
+      'error'
+    );
     return;
   }
 
@@ -1042,8 +1046,9 @@ async function saveEmailClientConfig() {
 
   try {
     await api.updateEmailClientConfig(config);
-    showAlert(
-      `Email client configuration "${configName}" saved successfully!`,
+    showConfigSaveModal(
+      'Email Client Configuration Saved',
+      `Email client configuration "${configName}" was saved successfully.`,
       'success'
     );
     currentConfigName = configName;
@@ -1057,7 +1062,8 @@ async function saveEmailClientConfig() {
       document.getElementById('configNameGroup').style.display = 'none';
     }
   } catch (error) {
-    showAlert(
+    showConfigSaveModal(
+      'Failed to Save Email Client Configuration',
       'Failed to save email client configuration: ' + error.message,
       'error'
     );
@@ -1078,9 +1084,14 @@ async function saveEmailGenConfig() {
 
   try {
     await api.updateConfig({ email_generation: config });
-    showAlert('Email generation configuration saved successfully!', 'success');
+    showConfigSaveModal(
+      'Email Generation Configuration Saved',
+      'Email generation configuration was saved successfully.',
+      'success'
+    );
   } catch (error) {
-    showAlert(
+    showConfigSaveModal(
+      'Failed to Save Email Generation Configuration',
       'Failed to save email generation configuration: ' + error.message,
       'error'
     );
@@ -1127,8 +1138,9 @@ async function testEmailConfiguration() {
     !emailClientConfig.username ||
     !emailClientConfig.password
   ) {
-    showAlert(
-      'Please fill in all required email client configuration fields',
+    showConfigSaveModal(
+      'Missing Required Fields',
+      'Please fill in IMAP server, username, and password before testing the configuration.',
       'error'
     );
     return;
@@ -1279,4 +1291,41 @@ function showAlert(message, type) {
   container.insertBefore(alertDiv, container.firstChild);
 
   setTimeout(() => alertDiv.remove(), 5000);
+}
+
+function showConfigSaveModal(title, message, type) {
+  const modal = document.getElementById('configSaveModal');
+  const modalTitle = document.getElementById('configSaveModalTitle');
+  const modalBody = document.getElementById('configSaveModalBody');
+  const okBtn = document.getElementById('configSaveModalOkBtn');
+  const closeBtn = document.getElementById('configSaveModalClose');
+
+  if (!modal || !modalTitle || !modalBody || !okBtn || !closeBtn) {
+    // Fallback to inline alert if modal markup is missing
+    showAlert(message, type);
+    return;
+  }
+
+  modalTitle.textContent = title;
+  modalBody.innerHTML = `
+    <div class="alert alert-${type === 'error' ? 'error' : 'success'}">
+      ${message}
+    </div>
+  `;
+
+  const hideModal = () => {
+    modal.classList.add('hidden');
+  };
+
+  // Ensure previous listeners don't stack
+  okBtn.onclick = hideModal;
+  closeBtn.onclick = hideModal;
+
+  modal.onclick = (e) => {
+    if (e.target.id === 'configSaveModal') {
+      hideModal();
+    }
+  };
+
+  modal.classList.remove('hidden');
 }

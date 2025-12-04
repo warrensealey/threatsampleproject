@@ -1,6 +1,6 @@
 # Email Data Generation Project
 
-**Version 1.1.0**
+**Version 1.2.0**
 
 Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
@@ -27,10 +27,10 @@ The easiest way to run the application is using Docker:
 docker pull ghcr.io/warrensealey/threatsampleproject:latest
 
 # Run with docker
-docker run -p 5000:5000 -v $(pwd)/data:/app/data ghcr.io/warrensealey/threatsampleproject:latest
+docker run -p 8080:5000 -v $(pwd)/data:/app/data ghcr.io/warrensealey/threatsampleproject:latest
 
 # Or use docker-compose
-docker-compose up
+docker compose up -d
 ```
 
 ### Manual Installation
@@ -51,8 +51,8 @@ Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions
 
 ### Access the Application
 
-- **Dashboard**: http://localhost:5000
-- **Configuration**: http://localhost:5000/config
+- **Dashboard**: http://localhost:8080
+- **Configuration**: http://localhost:8080/config
 
 ## Documentation
 
@@ -139,7 +139,14 @@ threatsampleproject/
 
 ## Version
 
-Current version: **1.1.0**
+Current version: **1.2.0**
+
+### What's new in 1.2.0
+
+- Dockerized application now runs behind Gunicorn (4 workers) for better stability and concurrent request handling.
+- Frontend API calls use a timeout and retry wrapper to reduce transient “Failed to fetch” errors when Docker/network hiccups occur.
+- Configuration saves and test-email actions now use clear modal popups showing success or detailed failure reasons (including missing required fields).
+- Docker Compose configuration includes basic CPU and memory limits for the `email-data-gen` service to avoid runaway resource usage.
 
 ### What's new in 1.1.0
 

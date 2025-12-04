@@ -4,132 +4,188 @@
 
 const API_BASE = '/api';
 
+// Basic fetch wrapper with timeout and simple retry logic to make the UI
+// more resilient to transient Docker / network hiccups.
+async function fetchWithTimeoutAndRetry(
+  url,
+  config = {},
+  { timeoutMs = 15000, retries = 2, retryDelayMs = 500 } = {}
+) {
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+    try {
+      const response = await fetch(url, {
+        ...config,
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+      return response;
+    } catch (err) {
+      clearTimeout(timer);
+      lastError = err;
+
+      const isAbortError =
+        err &&
+        (err.name === 'AbortError' ||
+          err.message === 'The user aborted a request.');
+
+      // Only retry on network/abort errors, not HTTP errors (those still give a response)
+      if (attempt < retries && (isAbortError || err instanceof TypeError)) {
+        await new Promise((r) => setTimeout(r, retryDelayMs));
+        continue;
+      }
+
+      throw err;
+    }
+  }
+
+  throw lastError;
+}
+
 class APIClient {
-    async request(endpoint, options = {}) {
-        const url = `${API_BASE}${endpoint}`;
-        const config = {
-            headers: {
-                'Content-Type': 'application/json',
-                ...options.headers
-            },
-            ...options
-        };
+  async request(endpoint, options = {}) {
+    const url = `${API_BASE}${endpoint}`;
+    const config = {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      ...options,
+    };
 
-        if (config.body && typeof config.body === 'object') {
-            config.body = JSON.stringify(config.body);
-        }
-
-        try {
-            const response = await fetch(url, config);
-            const data = await response.json();
-            
-            if (!response.ok) {
-                throw new Error(data.error || `HTTP error! status: ${response.status}`);
-            }
-            
-            return data;
-        } catch (error) {
-            console.error(`API request failed: ${endpoint}`, error);
-            throw error;
-        }
+    if (config.body && typeof config.body === 'object') {
+      config.body = JSON.stringify(config.body);
     }
 
-    // Configuration
-    async getConfig() {
-        return this.request('/config');
-    }
+    try {
+      const response = await fetchWithTimeoutAndRetry(url, config);
+      const data = await response.json();
 
-    async updateConfig(config) {
-        return this.request('/config', {
-            method: 'POST',
-            body: config
-        });
-    }
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP error! status: ${response.status}`);
+      }
 
-    // Email client configuration
-    async getEmailClientConfig(name = null) {
-        const endpoint = name ? `/email/config?name=${encodeURIComponent(name)}` : '/email/config';
-        return this.request(endpoint);
+      return data;
+    } catch (error) {
+      console.error(`API request failed: ${endpoint}`, error);
+      throw error;
     }
+  }
 
-    async updateEmailClientConfig(config) {
-        return this.request('/email/config', {
-            method: 'POST',
-            body: config
-        });
-    }
+  // Configuration
+  async getConfig() {
+    return this.request('/config');
+  }
 
-    async getAllEmailClientConfigs() {
-        return this.request('/email/configs');
-    }
+  async updateConfig(config) {
+    return this.request('/config', {
+      method: 'POST',
+      body: config,
+    });
+  }
 
-    async deleteEmailClientConfig(name) {
-        return this.request(`/email/config/${encodeURIComponent(name)}`, {
-            method: 'DELETE'
-        });
-    }
+  // Email client configuration
+  async getEmailClientConfig(name = null) {
+    const endpoint = name
+      ? `/email/config?name=${encodeURIComponent(name)}`
+      : '/email/config';
+    return this.request(endpoint);
+  }
 
-    async getCurrentEmailClient() {
-        return this.request('/email/config/current');
-    }
+  async updateEmailClientConfig(config) {
+    return this.request('/email/config', {
+      method: 'POST',
+      body: config,
+    });
+  }
 
-    async setCurrentEmailClient(name) {
-        return this.request('/email/config/current', {
-            method: 'POST',
-            body: { name }
-        });
-    }
+  async getAllEmailClientConfigs() {
+    return this.request('/email/configs');
+  }
 
-    // Email sending
-    async sendPhishing(count, recipients, templateType = 'warning') {
-        return this.request('/send/phishing', {
-            method: 'POST',
-            body: { count, recipients, template_type: templateType }
-        });
-    }
+  async deleteEmailClientConfig(name) {
+    return this.request(`/email/config/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    });
+  }
 
-    async sendEicar(count, recipients) {
-        return this.request('/send/eicar', {
-            method: 'POST',
-            body: { count, recipients }
-        });
-    }
+  async getCurrentEmailClient() {
+    return this.request('/email/config/current');
+  }
 
-    async sendCynic(count, recipients) {
-        return this.request('/send/cynic', {
-            method: 'POST',
-            body: { count, recipients }
-        });
-    }
+  async setCurrentEmailClient(name) {
+    return this.request('/email/config/current', {
+      method: 'POST',
+      body: { name },
+    });
+  }
 
-    async sendGtube(count, recipients) {
-        return this.request('/send/gtube', {
-            method: 'POST',
-            body: { count, recipients }
-        });
-    }
+  // Email sending
+  async sendPhishing(count, recipients, templateType = 'warning') {
+    return this.request('/send/phishing', {
+      method: 'POST',
+      body: { count, recipients, template_type: templateType },
+    });
+  }
 
-    async sendCustom(count, recipients, subject, body, displayName, attachmentType) {
-        return this.request('/send/custom', {
-            method: 'POST',
-            body: { count, recipients, subject, body, display_name: displayName, attachment_type: attachmentType }
-        });
-    }
+  async sendEicar(count, recipients) {
+    return this.request('/send/eicar', {
+      method: 'POST',
+      body: { count, recipients },
+    });
+  }
 
-    // History
-    async getHistory() {
-        return this.request('/history');
-    }
+  async sendCynic(count, recipients) {
+    return this.request('/send/cynic', {
+      method: 'POST',
+      body: { count, recipients },
+    });
+  }
 
-    // Test email configuration
-    async testEmailConfig(recipient, emailClientConfig) {
-        return this.request('/test/email', {
-            method: 'POST',
-            body: { recipient, email_client_config: emailClientConfig }
-        });
-    }
+  async sendGtube(count, recipients) {
+    return this.request('/send/gtube', {
+      method: 'POST',
+      body: { count, recipients },
+    });
+  }
 
+  async sendCustom(
+    count,
+    recipients,
+    subject,
+    body,
+    displayName,
+    attachmentType
+  ) {
+    return this.request('/send/custom', {
+      method: 'POST',
+      body: {
+        count,
+        recipients,
+        subject,
+        body,
+        display_name: displayName,
+        attachment_type: attachmentType,
+      },
+    });
+  }
+
+  // History
+  async getHistory() {
+    return this.request('/history');
+  }
+
+  // Test email configuration
+  async testEmailConfig(recipient, emailClientConfig) {
+    return this.request('/test/email', {
+      method: 'POST',
+      body: { recipient, email_client_config: emailClientConfig },
+    });
+  }
 }
 
 const api = new APIClient();
-

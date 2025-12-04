@@ -1,6 +1,6 @@
 # Installation Guide
 
-**Version 1.1.0**
+**Version 1.2.0**
 
 This guide provides step-by-step instructions for installing and setting up the Email Data Generation application.
 
@@ -85,7 +85,7 @@ docker pull ghcr.io/warrensealey/threatsampleproject:latest
 # Run the container
 docker run -d \
   --name email-data-gen \
-  -p 5000:5000 \
+  -p 8080:5000 \
   -v $(pwd)/data:/app/data \
   ghcr.io/warrensealey/threatsampleproject:latest
 ```
@@ -120,20 +120,20 @@ docker build -t email-data-gen .
 # Run the container
 docker run -d \
   --name email-data-gen \
-  -p 5000:5000 \
+  -p 8080:5000 \
   -v $(pwd)/data:/app/data \
   email-data-gen
 ```
 
 #### Docker Configuration
 
-- **Port**: The application runs on port 5000 inside the container and is mapped to port 5000 on your host
+- **Port**: The application runs on port 5000 inside the container and is mapped to port 8080 on your host by default (`-p 8080:5000`)
 - **Data Persistence**: The `data/` directory is mounted as a volume to preserve your configuration
-- **Access**: Open http://localhost:5000 in your browser
+- **Access**: Open http://localhost:8080 in your browser
 
 #### Docker Troubleshooting
 
-- **Port already in use**: Change the port mapping: `-p 8080:5000` (access at http://localhost:8080)
+- **Port already in use**: Change the port mapping: e.g. `-p 9090:5000` (access at http://localhost:9090)
 - **Permission issues**: Ensure the `data/` directory has proper permissions: `chmod 755 data`
 - **View logs**: `docker logs email-data-gen` or `docker-compose logs`
 

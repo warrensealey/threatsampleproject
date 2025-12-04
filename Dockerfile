@@ -27,6 +27,6 @@ USER appuser
 # Expose port 5000
 EXPOSE 5000
 
-# Run the Flask application
-CMD ["python3", "backend/app.py"]
+# Run the application with Gunicorn (production-ready WSGI server)
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:5000", "backend.app:app"]
 

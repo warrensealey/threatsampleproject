@@ -4,4 +4,5 @@ requests>=2.28.0
 py7zr==0.21.0
 python-dotenv==1.0.0
 cryptography>=41.0.0
+gunicorn>=21.2.0
 

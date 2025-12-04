@@ -1,6 +1,6 @@
 # Email Data Generation Project - Complete Plan
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Repository:** `/Users/warrensealey/threatsampleproject/`
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
@@ -51,7 +51,7 @@ threatsampleproject/
 └── PROJECT_PLAN.md         # This file
 ```
 
-## Current Features (Version 1.1.0)
+## Current Features (Version 1.2.0)
 
 ### Email Types
 
@@ -307,7 +307,14 @@ docker-compose up
 
 ## Version History
 
-### Version 1.1.0 (Current)
+### Version 1.2.0 (Current)
+
+- Switched Dockerized deployment to use Gunicorn (4 workers) instead of the Flask development server for improved stability and concurrent request handling.
+- Added a timeout + retry wrapper around all frontend API calls to reduce transient “Failed to fetch” errors when Docker or network hiccups occur.
+- Improved configuration UX by showing modal popups for all configuration saves and test-email actions, including clear messages for missing required fields.
+- Introduced basic CPU and memory limits for the `email-data-gen` service in `docker-compose.yml` to prevent runaway resource usage.
+
+### Version 1.1.0
 
 - Added random-number comments to Cynic VBS scripts so each generated sample has a unique file hash while maintaining identical behaviour.
 - Implemented password-only configuration encryption for SMTP and email client passwords at rest in `data/config.json` using Fernet.

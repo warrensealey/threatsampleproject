@@ -19,25 +19,25 @@
         <div class="card">
             <h2>Email Client Configuration</h2>
             <p>Configure IMAP settings for reading emails and SMTP settings for sending emails from your web-based email account.</p>
-            
+
             <div class="form-group">
                 <label for="configSelector">Configuration:</label>
                 <select id="configSelector" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                     <option value="">-- Create New Configuration --</option>
                 </select>
             </div>
-            
+
             <div class="form-group" id="configNameGroup">
                 <label for="configName">Configuration Name:</label>
                 <input type="text" id="configName" placeholder="e.g., gmx-main, gmail-work" required>
                 <small style="color: #666; display: block; margin-top: 5px;">Enter a unique name for this configuration</small>
             </div>
-            
+
             <div id="configList" class="hidden" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px;">
                 <h3 style="margin-bottom: 10px; font-size: 1.1em;">Saved Configurations</h3>
                 <div id="configListItems"></div>
             </div>
-            
+
             <div class="form-group">
                 <label for="emailProvider">Email Provider:</label>
                 <select id="emailProvider" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
@@ -125,6 +125,20 @@
                 <div id="testEmailActions" class="hidden">
                     <button class="btn btn-primary" id="confirmReceiptBtn">I Received the Email</button>
                     <button class="btn btn-secondary" id="cancelTestBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Generic configuration save status modal -->
+        <div id="configSaveModal" class="modal hidden">
+            <div class="modal-content">
+                <span id="configSaveModalClose" class="modal-close">&times;</span>
+                <h2 id="configSaveModalTitle">Configuration Status</h2>
+                <div id="configSaveModalBody">
+                    <p class="loading">Processing...</p>
+                </div>
+                <div class="modal-actions" style="margin-top: 15px; text-align: right;">
+                    <button id="configSaveModalOkBtn" class="btn btn-primary">OK</button>
                 </div>
             </div>
         </div>
