@@ -83,15 +83,15 @@
                     <strong>This feature downloads and sends REAL, active phishing URLs from the PhishTank website.</strong>
                 </p>
                 <p style="font-size: 16px; line-height: 1.6; margin-bottom: 15px;">
-                    PhishTank is a collaborative clearing house for data and information about phishing on the Internet. 
+                    PhishTank is a collaborative clearing house for data and information about phishing on the Internet.
                     The URLs downloaded are <strong>real, active phishing sites</strong> that have been reported and verified.
                 </p>
                 <p style="font-size: 16px; line-height: 1.6; margin-bottom: 15px;">
-                    <strong>Important:</strong> The emails generated using these URLs should be considered <strong>MALICIOUS</strong> and 
+                    <strong>Important:</strong> The emails generated using these URLs should be considered <strong>MALICIOUS</strong> and
                     <strong>MUST NOT</strong> be opened on production computers or any system where sensitive data is stored.
                 </p>
                 <p style="font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-                    For more information about PhishTank, visit: 
+                    For more information about PhishTank, visit:
                     <a href="https://www.phishtank.com" target="_blank" rel="noopener noreferrer" style="color: #1976d2; text-decoration: underline;">
                         https://www.phishtank.com
                     </a>
@@ -145,11 +145,21 @@
                     <input type="text" id="customRecipients" required placeholder="email1@example.com, email2@example.com">
                 </div>
                 <div class="form-group">
+                    <label for="customTemplateSelect">Template (optional):</label>
+                    <select id="customTemplateSelect">
+                        <option value="">-- No Template --</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Select a saved template to quickly populate subject, body, display name, and attachment.
+                    </small>
+                </div>
+                <div class="form-group">
                     <label for="customCount">Count:</label>
                     <input type="number" id="customCount" value="1" min="1" style="width: 100px;">
                 </div>
                 <div class="btn-group">
                     <button type="submit" class="btn btn-primary">Send Email</button>
+                    <button type="button" class="btn btn-secondary" id="saveCustomTemplateBtn">Save as Template</button>
                     <button type="button" class="btn btn-secondary" id="cancelCustomEmailBtn">Cancel</button>
                 </div>
             </form>

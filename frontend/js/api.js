@@ -186,6 +186,30 @@ class APIClient {
       body: { recipient, email_client_config: emailClientConfig },
     });
   }
+
+  // Templates
+  async getTemplates(type = null) {
+    const endpoint = type
+      ? `/templates?type=${encodeURIComponent(type)}`
+      : '/templates';
+    return this.request(endpoint);
+  }
+
+  async saveTemplate(type, name, template) {
+    return this.request('/templates', {
+      method: 'POST',
+      body: { type, name, template },
+    });
+  }
+
+  async deleteTemplate(type, name) {
+    return this.request(
+      `/templates/${encodeURIComponent(type)}/${encodeURIComponent(name)}`,
+      {
+        method: 'DELETE',
+      }
+    );
+  }
 }
 
 const api = new APIClient();

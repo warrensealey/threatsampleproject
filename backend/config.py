@@ -31,6 +31,13 @@ DEFAULT_CONFIG = {
             "gtube": "GTUBE Spam Test Email"
         }
     },
+    # Named email templates grouped by type, e.g.:
+    # "templates": {
+    #   "custom": {
+    #       "My Template": { "subject": "...", "body": "...", ... }
+    #   }
+    # }
+    "templates": {},
     "history": []
 }
 
@@ -62,6 +69,10 @@ def load_config():
                 # Ensure current_email_client exists
                 if "current_email_client" not in config:
                     config["current_email_client"] = None
+
+                # Ensure templates exists
+                if "templates" not in config:
+                    config["templates"] = {}
 
                 # Decrypt password fields (backward compatible with plain text)
                 smtp_cfg = config.get("smtp") or {}
@@ -156,6 +167,79 @@ def get_email_generation_config():
     """Get email generation configuration."""
     config = load_config()
     return config.get("email_generation", {})
+
+
+def get_templates(template_type=None):
+    """Get stored email templates.
+
+    Args:
+        template_type: Optional template type (e.g. \"custom\", \"phishing\").
+                       If None, returns all templates grouped by type.
+
+    Returns:
+        Dict of templates. For a specific type, returns a mapping of
+        template_name -> template_data. For all, returns a mapping of
+        type -> {name -> data}.
+    """
+    config = load_config()
+    templates = config.get("templates") or {}
+    if template_type:
+        return (templates.get(template_type) or {}).copy()
+    # Shallow copy per type to avoid accidental mutation
+    return {t_type: (t_map or {}).copy() for t_type, t_map in templates.items()}
+
+
+def save_template(template_type, name, template_data):
+    """Save or update a named template for a given type.
+
+    Args:
+        template_type: e.g. \"custom\", \"phishing\".
+        name: Human-friendly template name (key).
+        template_data: Dict of template fields.
+    """
+    if not template_type or not name:
+        return False
+
+    config = load_config()
+    templates = config.get("templates") or {}
+    if not isinstance(templates, dict):
+        templates = {}
+
+    if template_type not in templates or not isinstance(templates.get(template_type), dict):
+        templates[template_type] = {}
+
+    templates[template_type][name] = template_data or {}
+    config["templates"] = templates
+    return save_config(config)
+
+
+def delete_template(template_type, name):
+    """Delete a named template.
+
+    Args:
+        template_type: Template type (e.g. \"custom\").
+        name: Template name.
+
+    Returns:
+        bool: True if deleted, False if not found.
+    """
+    if not template_type or not name:
+        return False
+
+    config = load_config()
+    templates = config.get("templates") or {}
+    type_map = templates.get(template_type)
+
+    if not isinstance(type_map, dict) or name not in type_map:
+        return False
+
+    del type_map[name]
+    if not type_map:
+        # Remove empty type bucket
+        del templates[template_type]
+
+    config["templates"] = templates
+    return save_config(config)
 
 
 def update_smtp_config(smtp_config):

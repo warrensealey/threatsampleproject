@@ -15,12 +15,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Dashboard functions
 let defaultRecipients = [];
+let customTemplates = {};
 
 async function initDashboard() {
   await loadHistory();
   await loadDefaultRecipients();
+  await loadCustomTemplates();
   setupSendButtons();
   setupEmailSendModal();
+
+  // Custom templates: save button handler
+  const saveTemplateBtn = document.getElementById('saveCustomTemplateBtn');
+  if (saveTemplateBtn) {
+    saveTemplateBtn.addEventListener('click', async () => {
+      const subject = document.getElementById('customSubject').value.trim();
+      const body = document.getElementById('customBody').value.trim();
+      const displayName = document
+        .getElementById('customDisplayName')
+        .value.trim();
+      const attachmentType =
+        document.getElementById('customAttachment').value || null;
+
+      if (!subject || !body) {
+        showAlert(
+          'Please enter both subject and body before saving a template.',
+          'error'
+        );
+        return;
+      }
+
+      const name = prompt(
+        'Enter a name for this template (e.g., "Test campaign 1"):'
+      );
+      if (!name || !name.trim()) {
+        return;
+      }
+
+      try {
+        await api.saveTemplate('custom', name.trim(), {
+          subject,
+          body,
+          display_name: displayName || '',
+          attachment_type: attachmentType,
+        });
+        showAlert(`Template "${name.trim()}" saved successfully.`, 'success');
+        await loadCustomTemplates();
+      } catch (error) {
+        showAlert('Failed to save template: ' + error.message, 'error');
+      }
+    });
+  }
 }
 
 function setupEmailSendModal() {
@@ -991,6 +1035,49 @@ async function loadConfig(configName = null) {
               provider.smtp_use_ssl === true;
           }
         }
+
+async function loadCustomTemplates() {
+  try {
+    const result = await api.getTemplates('custom');
+    customTemplates = (result.templates || {});
+
+    const select = document.getElementById('customTemplateSelect');
+    if (!select) return;
+
+    // Reset options
+    select.innerHTML = '<option value=\"\">-- No Template --</option>';
+
+    Object.keys(customTemplates)
+      .sort()
+      .forEach((name) => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        select.appendChild(opt);
+      });
+
+    select.onchange = () => {
+      const tplName = select.value;
+      if (!tplName || !customTemplates[tplName]) {
+        return;
+      }
+      const tpl = customTemplates[tplName];
+      if (tpl.subject) {
+        document.getElementById('customSubject').value = tpl.subject;
+      }
+      if (tpl.body) {
+        document.getElementById('customBody').value = tpl.body;
+      }
+      if (typeof tpl.display_name === 'string') {
+        document.getElementById('customDisplayName').value = tpl.display_name;
+      }
+      if (tpl.attachment_type) {
+        document.getElementById('customAttachment').value = tpl.attachment_type;
+      }
+    };
+  } catch (error) {
+    console.error('Failed to load custom templates:', error);
+  }
       }
     } else {
       // If no config exists, auto-populate GMX (default selected)
@@ -1011,11 +1098,79 @@ async function loadConfig(configName = null) {
       document.getElementById('defaultCount').value =
         config.email_generation.default_count || 1;
     }
+    // Load templates into config page list
+    await loadTemplateList();
   } catch (error) {
     console.error('Failed to load config:', error);
     showAlert('Failed to load configuration', 'error');
   }
 }
+
+async function loadTemplateList() {
+  const container = document.getElementById('templateList');
+  if (!container) return;
+
+  container.innerHTML = '<p class="loading">Loading templates...</p>';
+
+  try {
+    const result = await api.getTemplates();
+    const templates = result.templates || {};
+
+    const types = Object.keys(templates);
+    if (types.length === 0) {
+      container.innerHTML =
+        '<p class="loading">No templates saved yet. Use the Custom Email dialog on the dashboard to create one.</p>';
+      return;
+    }
+
+    let html = '';
+    types.sort().forEach((type) => {
+      const typeTemplates = templates[type] || {};
+      const names = Object.keys(typeTemplates);
+      if (names.length === 0) {
+        return;
+      }
+      html += `<h3 style="margin-top: 10px;">${type} templates</h3>`;
+      html += '<ul style="list-style: none; padding-left: 0;">';
+      names
+        .sort()
+        .forEach((name) => {
+          html += `<li style="display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #eee;">
+              <span><strong>${name}</strong></span>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.85em;" onclick="deleteTemplateConfig('${type}','${name.replace(/'/g, \"\\'\")}')">Delete</button>
+            </li>`;
+        });
+      html += '</ul>';
+    });
+
+    container.innerHTML = html || '<p class="loading">No templates saved yet.</p>';
+  } catch (error) {
+    console.error('Failed to load templates:', error);
+    container.innerHTML =
+      '<p class="alert alert-error">Failed to load templates.</p>';
+  }
+}
+
+// Expose template delete for config page list
+window.deleteTemplateConfig = async function (type, name) {
+  if (
+    !confirm(
+      `Are you sure you want to delete template "${name}" of type "${type}"?`
+    )
+  ) {
+    return;
+  }
+
+  try {
+    await api.deleteTemplate(type, name);
+    showAlert(`Template "${name}" deleted.`, 'success');
+    await loadTemplateList();
+    // Refresh custom templates in dashboard if on that page
+    await loadCustomTemplates();
+  } catch (error) {
+    showAlert('Failed to delete template: ' + error.message, 'error');
+  }
+};
 
 async function saveEmailClientConfig() {
   const configNameInput = document.getElementById('configName');
