@@ -66,7 +66,7 @@ threatsampleproject/
 - GMX (recommended, tested and verified)
 - Gmail (requires app-specific password)
 - Yahoo (requires app-specific password)
-- iCloud
+- iCloud (requires app-specific password, tested and verified)
 - Zoho
 - Outlook.com
 - Office365

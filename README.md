@@ -85,6 +85,11 @@ Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions
 > - Yahoo requires an **app-specific password** (generate it under Yahoo Account → Account Security → Generate app password) for IMAP/SMTP access; regular passwords will cause "Connection unexpectedly closed" errors when 2FA or modern account security is enabled.
 > - With the app password configured, Yahoo can successfully send phishing URL tests and GTUBE spam-test emails. Yahoo may block EICAR and Cynic payloads similar to Gmail, so those templates may fail when routed through Yahoo.
 
+> **iCloud-specific notes**
+>
+> - iCloud requires an **app-specific password** (generate it under Apple ID → Sign-In & Security → App-Specific Passwords) for IMAP/SMTP access; regular Apple ID passwords will be rejected when modern security settings are enabled.
+> - With the app password configured, iCloud has been tested and can successfully send phishing URL tests and GTUBE spam-test emails from this application.
+
 ## Usage
 
 ### Sending Test Emails

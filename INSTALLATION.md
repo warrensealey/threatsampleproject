@@ -56,6 +56,11 @@ Before installing the application, ensure you have the following:
 - After configuring the app password, Yahoo can send phishing URL tests and the GTUBE spam-test email.
 - Yahoo may block the EICAR and Cynic attachments on outbound SMTP similar to Gmail, so those specific templates may fail when using Yahoo as the provider.
 
+### iCloud Considerations
+
+- iCloud requires creating an **app-specific password** (Apple ID → Sign-In & Security → App-Specific Passwords) before IMAP/SMTP access will work with this project.
+- After configuring the app password, iCloud has been tested and can send phishing URL tests and the GTUBE spam-test email.
+
 ## Installation Methods
 
 ### Method 1: Docker (Recommended)

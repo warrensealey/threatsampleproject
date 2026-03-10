@@ -264,6 +264,10 @@ The application supports the following email providers:
 > - With that credential, Yahoo can successfully deliver phishing URL tests and GTUBE spam-test emails from this application.
 > - Yahoo may block EICAR and Cynic payloads during outbound scanning similar to Gmail, so those templates may fail when attempting to send via Yahoo.
 
+> **iCloud-specific behavior**
+> - iCloud requires an **app-specific password** generated under Apple ID → Sign-In & Security → App-Specific Passwords before IMAP/SMTP access will succeed.
+> - With that credential, iCloud has been tested and can successfully deliver phishing URL tests and GTUBE spam-test emails from this application.
+
 ### Provider Auto-Detection
 
 The backend automatically detects the email provider from the IMAP server address and configures the appropriate SMTP server settings.
