@@ -266,6 +266,31 @@ def send_phishing():
         return jsonify({"error": str(e)}), 500
 
 
+@api.route("/send/qr_phishing", methods=["POST"])
+def send_qr_phishing():
+    """Send QR-based phishing test emails."""
+    try:
+        data = request.json or {}
+        count = data.get("count", 1)
+        recipients = data.get("recipients", [])
+        qr_mode = data.get("qr_mode", "body")
+        template_type = data.get("template_type", "warning")
+
+        if not recipients:
+            return jsonify({"error": "No recipients specified"}), 400
+
+        result = email_generator.send_qr_phishing_emails(
+            count=count,
+            recipients=recipients,
+            qr_mode=qr_mode,
+            template_type=template_type,
+        )
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error sending QR phishing emails: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @api.route("/send/eicar", methods=["POST"])
 def send_eicar():
     """Send EICAR test emails."""

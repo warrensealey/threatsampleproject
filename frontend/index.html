@@ -25,6 +25,11 @@
                     <button class="btn btn-primary" id="sendPhishingBtn">Send Phishing Emails</button>
                 </div>
                 <div>
+                    <h3>QR Phishing Emails</h3>
+                    <p>Generate phishing test emails where PhishTank URLs are encoded as QR codes.</p>
+                    <button class="btn btn-primary" id="sendQrPhishingBtn">Send QR Phishing Emails</button>
+                </div>
+                <div>
                     <h3>EICAR Test Emails</h3>
                     <p>Send EICAR test file attachments for antivirus testing.</p>
                     <button class="btn btn-success" id="sendEicarBtn">Send EICAR Emails</button>
@@ -175,6 +180,36 @@
                     <button type="submit" class="btn btn-primary">Send Email</button>
                     <button type="button" class="btn btn-secondary" id="saveCustomTemplateBtn">Save as Template</button>
                     <button type="button" class="btn btn-secondary" id="cancelCustomEmailBtn">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- QR Phishing Modal -->
+    <div id="qrPhishingModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <span class="modal-close" id="qrPhishingModalClose">&times;</span>
+            <h2>Send QR Phishing Emails</h2>
+            <form id="qrPhishingForm">
+                <div class="form-group">
+                    <label for="qrModeSelect">QR Mode:</label>
+                    <select id="qrModeSelect" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="body" selected>Inline QR in email body</option>
+                        <option value="pdf">QR in PDF attachment</option>
+                        <option value="both">Inline QR + PDF attachment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="qrCountInput">Count:</label>
+                    <input type="number" id="qrCountInput" value="1" min="1" style="width: 100px;">
+                </div>
+                <div class="form-group">
+                    <label for="qrRecipientsInput">Recipients:</label>
+                    <input type="text" id="qrRecipientsInput" placeholder="email1@example.com, email2@example.com">
+                </div>
+                <div class="btn-group">
+                    <button type="submit" class="btn btn-primary">Send</button>
+                    <button type="button" class="btn btn-secondary" id="cancelQrPhishingBtn">Cancel</button>
                 </div>
             </form>
         </div>

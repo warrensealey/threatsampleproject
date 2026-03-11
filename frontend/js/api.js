@@ -132,6 +132,13 @@ class APIClient {
     });
   }
 
+  async sendQrPhishing(count, recipients, qrMode = 'body') {
+    return this.request('/send/qr_phishing', {
+      method: 'POST',
+      body: { count, recipients, qr_mode: qrMode },
+    });
+  }
+
   async sendEicar(count, recipients) {
     return this.request('/send/eicar', {
       method: 'POST',

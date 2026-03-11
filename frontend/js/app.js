@@ -119,6 +119,32 @@ function setupEmailSendModal() {
       await sendCustomEmail();
     });
 
+  // QR phishing modal handlers
+  document
+    .getElementById('qrPhishingModalClose')
+    ?.addEventListener('click', () => {
+      document.getElementById('qrPhishingModal').classList.add('hidden');
+    });
+
+  document
+    .getElementById('cancelQrPhishingBtn')
+    ?.addEventListener('click', () => {
+      document.getElementById('qrPhishingModal').classList.add('hidden');
+    });
+
+  document.getElementById('qrPhishingModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'qrPhishingModal') {
+      document.getElementById('qrPhishingModal').classList.add('hidden');
+    }
+  });
+
+  document
+    .getElementById('qrPhishingForm')
+    ?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await submitQrPhishingFromModal();
+    });
+
   // Phishing warning modal handlers
   document
     .getElementById('phishingWarningConfirmBtn')
@@ -158,6 +184,12 @@ function setupSendButtons() {
     showPhishingWarning();
   });
 
+  document
+    .getElementById('sendQrPhishingBtn')
+    ?.addEventListener('click', () => {
+      showQrPhishingDialog();
+    });
+
   document.getElementById('sendEicarBtn')?.addEventListener('click', () => {
     showSendDialog('eicar');
   });
@@ -173,6 +205,202 @@ function setupSendButtons() {
   document.getElementById('sendCustomBtn')?.addEventListener('click', () => {
     showCustomEmailModal();
   });
+}
+
+function showQrPhishingDialog() {
+  const modal = document.getElementById('qrPhishingModal');
+  const modeSelect = document.getElementById('qrModeSelect');
+  const countInput = document.getElementById('qrCountInput');
+  const recipientsInput = document.getElementById('qrRecipientsInput');
+
+  if (!modal || !modeSelect || !countInput || !recipientsInput) {
+    return;
+  }
+
+  // Reset fields
+  modeSelect.value = 'body';
+  countInput.value = '1';
+  if (defaultRecipients.length > 0) {
+    recipientsInput.value = defaultRecipients.join(', ');
+  } else {
+    recipientsInput.value = '';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+async function submitQrPhishingFromModal() {
+  const modal = document.getElementById('qrPhishingModal');
+  const modeSelect = document.getElementById('qrModeSelect');
+  const countInput = document.getElementById('qrCountInput');
+  const recipientsInput = document.getElementById('qrRecipientsInput');
+
+  if (!modal || !modeSelect || !countInput || !recipientsInput) {
+    return;
+  }
+
+  const qrMode = (modeSelect.value || 'body').toLowerCase();
+  if (!['body', 'pdf', 'both'].includes(qrMode)) {
+    alert('Invalid QR mode selected.');
+    return;
+  }
+
+  const parsedCount = parseInt(countInput.value, 10) || 0;
+  if (parsedCount < 1) {
+    alert('Count must be at least 1.');
+    return;
+  }
+
+  const recipientsStr = recipientsInput.value.trim();
+  if (!recipientsStr) {
+    alert('Recipients are required.');
+    return;
+  }
+
+  const recipientList = recipientsStr
+    .split(',')
+    .map((r) => r.trim())
+    .filter((r) => r);
+
+  if (recipientList.length === 0) {
+    alert('No valid recipient addresses provided');
+    return;
+  }
+
+  // Close the modal and send
+  modal.classList.add('hidden');
+  await sendQrPhishingEmails(parsedCount, recipientList, qrMode);
+}
+
+async function sendQrPhishingEmails(count, recipients, qrMode) {
+  const statusDiv = document.getElementById('sendStatus');
+  const modal = document.getElementById('emailSendModal');
+  const modalTitle = document.getElementById('emailSendModalTitle');
+  const modalStatus = document.getElementById('emailSendStatus');
+  const modalConnectionInfo = document.getElementById(
+    'emailSendConnectionInfo'
+  );
+  const modalConnectionDetails = document.getElementById(
+    'emailSendConnectionDetails'
+  );
+  const modalActions = document.getElementById('emailSendActions');
+
+  modalTitle.textContent = 'QR Phishing Email Send Results';
+
+  // Show status in dashboard
+  statusDiv.innerHTML =
+    '<div class="alert alert-info">Sending QR phishing emails...</div>';
+  statusDiv.classList.remove('hidden');
+
+  // Show modal
+  modal.classList.remove('hidden');
+  modalStatus.innerHTML = '<p class="loading">Sending emails...</p>';
+  modalConnectionInfo.classList.add('hidden');
+  modalActions.classList.add('hidden');
+
+  try {
+    const result = await api.sendQrPhishing(count, recipients, qrMode);
+
+    // Build connection details text
+    let connectionText = '';
+    if (result.connection_info) {
+      const connInfo = result.connection_info;
+      connectionText = `IMAP Connection:
+Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${
+        connInfo.imap_use_ssl
+          ? 'SSL'
+          : connInfo.imap_use_starttls
+          ? 'STARTTLS'
+          : 'None'
+      }
+
+SMTP Connection:
+Server: ${connInfo.smtp_server || 'N/A'}:${connInfo.smtp_port || 587}
+Username: ${connInfo.username || 'N/A'}
+Encryption: ${connInfo.use_ssl ? 'SSL' : connInfo.use_tls ? 'TLS' : 'None'}
+
+Email Details:
+Type: QR Phishing
+Total: ${result.total || count}
+Sent: ${result.sent || 0}
+Failed: ${result.failed || 0}`;
+
+      if (result.success && result.connection_details) {
+        connectionText += `\n\n${result.connection_details}`;
+      } else if (result.error_details) {
+        connectionText += `\n\n${result.error_details}`;
+      } else if (result.connection_attempt) {
+        const attempt = result.connection_attempt;
+        connectionText += `\n\nConnection Attempt:
+Server: ${attempt.attempted_server || 'N/A'}
+Username: ${attempt.attempted_username || 'N/A'}
+Encryption: ${attempt.attempted_encryption || 'N/A'}
+Method: ${attempt.connection_method || 'N/A'}`;
+      }
+    }
+
+    if (result.success) {
+      statusDiv.innerHTML = `<div class="alert alert-success">
+                Successfully sent ${result.sent} QR phishing email(s)!
+            </div>`;
+
+      modalStatus.innerHTML = `<div class="alert alert-success">
+                <strong>Success!</strong> Successfully sent ${result.sent} QR phishing email(s)!
+            </div>`;
+
+      if (connectionText) {
+        modalConnectionDetails.innerHTML = `
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6;">${connectionText}</pre>
+                `;
+        modalConnectionInfo.classList.remove('hidden');
+      }
+
+      modalActions.classList.remove('hidden');
+      await loadHistory();
+    } else {
+      statusDiv.innerHTML = `<div class="alert alert-error">
+                Failed to send some QR phishing emails. Sent: ${
+                  result.sent
+                }, Failed: ${result.failed}
+                ${
+                  result.errors ? '<br>Errors: ' + result.errors.join(', ') : ''
+                }
+            </div>`;
+
+      modalStatus.innerHTML = `<div class="alert alert-error">
+                <strong>Error:</strong> Failed to send some QR phishing emails. Sent: ${
+                  result.sent || 0
+                }, Failed: ${result.failed || 0}
+                ${
+                  result.errors && result.errors.length > 0
+                    ? '<br><br>Errors:<br>' +
+                      result.errors.slice(0, 5).join('<br>')
+                    : ''
+                }
+            </div>`;
+
+      if (connectionText) {
+        modalConnectionDetails.innerHTML = `
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6; color: #d32f2f;">${connectionText}</pre>
+                `;
+        modalConnectionInfo.classList.remove('hidden');
+      }
+
+      modalActions.classList.remove('hidden');
+    }
+  } catch (error) {
+    statusDiv.innerHTML = `<div class="alert alert-error">
+            Error: ${error.message}
+        </div>`;
+
+    modalStatus.innerHTML = `<div class="alert alert-error">
+            <strong>Error:</strong> ${error.message}
+        </div>`;
+
+    modalActions.classList.remove('hidden');
+  }
 }
 
 function showPhishingWarning() {

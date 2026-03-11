@@ -97,6 +97,7 @@ Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions
 1. Navigate to the Dashboard
 2. Select the type of test email:
    - **Phishing Emails**: Test emails with PhishTank URLs
+   - **QR Phishing Emails**: Phishing emails where PhishTank URLs are encoded as QR codes embedded in the email body and/or a simple PDF attachment
    - **EICAR Test Emails**: Standard antivirus test files
    - **Cynic Test Emails**: Password-protected VBS archives
    - **GTUBE Spam Test**: Single-message spam detector test using the GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X`

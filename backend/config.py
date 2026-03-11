@@ -32,6 +32,7 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "eicar": "EICAR Test File",
             "cynic": "This is a important top secret email!",
             "gtube": "GTUBE Spam Test Email",
+            "qr_phishing": "QR Phishing Test Email",
         },
     },
     # Named email templates grouped by type, e.g.:

@@ -25,6 +25,7 @@ The Email Data Generation application is a full-stack web application designed f
 - **EICAR Test Emails**: Standard antivirus test files
 - **Cynic Test Emails**: Password-protected VBS archives
 - **GTUBE Spam-Test Emails**: Single-message spam detector tests that embed the canonical GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X` ([spec](https://en.wikipedia.org/wiki/GTUBE))
+- **QR Phishing Emails**: Phishing emails where PhishTank URLs are encoded as QR codes embedded in the email body and/or placed into a PDF attachment
 - **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments
 
 ### Key Features
@@ -314,6 +315,19 @@ GTUBE (Generic Test for Unsolicited Bulk Email) is a standard 68-byte string rec
 - Standard GTUBE test string in email body
 - Single email per send operation
 - Recognized by SpamAssassin and other anti-spam systems
+
+### QR Phishing Emails
+
+QR phishing emails take real phishing URLs from PhishTank and encode them as QR codes, which can be embedded directly in the email body and/or delivered via a simple PDF attachment.
+
+**Features**:
+- Uses the same PhishTank URL source as standard phishing emails
+- Encodes each URL as a QR code image
+- **Configurable QR modes**:
+  - Inline QR image in the email body
+  - QR code inside a generated PDF attachment
+  - Both inline and PDF in the same email
+- Plain-text body always included for compatibility, describing the encoded URL and QR purpose
 
 ### Custom Emails
 

@@ -9,6 +9,7 @@ from backend.generators.eicar import EICARGenerator
 from backend.generators.cynic import CynicGenerator
 from backend.generators.gtube import GTUBEGenerator
 from backend.generators.custom import CustomEmailGenerator
+from backend.generators.qr_phishing import QRPhishingGenerator
 from backend.config import add_history_entry, get_smtp_config
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ class EmailGenerator:
         self.cynic_gen = CynicGenerator()
         self.custom_gen = CustomEmailGenerator()
         self.gtube_gen = GTUBEGenerator()
+        self.qr_phishing_gen = QRPhishingGenerator()
     
     def send_phishing_emails(self, count=1, recipients=None, template_type="warning"):
         """
@@ -81,6 +83,32 @@ class EmailGenerator:
             return results
         except Exception as e:
             logger.error(f"Failed to send Cynic emails: {e}")
+            return {"success": False, "error": str(e), "sent": 0}
+
+    def send_qr_phishing_emails(self, count=1, recipients=None, qr_mode="body", template_type="warning"):
+        """
+        Generate and send QR-based phishing emails.
+
+        Args:
+            count: Number of emails to send
+            recipients: List of recipient email addresses
+            qr_mode: 'body', 'pdf', or 'both'
+            template_type: Logical template variant (currently reserved for future use)
+
+        Returns:
+            Dictionary with results
+        """
+        try:
+            emails = self.qr_phishing_gen.generate_emails(
+                count=count,
+                recipients=recipients,
+                qr_mode=qr_mode,
+                template_type=template_type,
+            )
+            results = self._send_emails(emails, "qr_phishing")
+            return results
+        except Exception as e:
+            logger.error(f"Failed to send QR phishing emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
 
     def send_gtube_emails(self, count=1, recipients=None):
@@ -246,12 +274,16 @@ Possible Causes:
                     try:
                         attachments = email_data.get("attachments", [])
                         display_name = email_data.get("display_name")
+                        html_body = email_data.get("html_body")
+                        inline_images = email_data.get("inline_images")
                         success = smtp.send_email(
                             to_addresses=email_data["recipients"],
                             subject=email_data["subject"],
                             body=email_data["body"],
                             attachments=attachments if attachments else None,
-                            display_name=display_name
+                            display_name=display_name,
+                            html_body=html_body,
+                            inline_images=inline_images,
                         )
                         
                         if success:
