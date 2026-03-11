@@ -59,6 +59,7 @@ threatsampleproject/
 - **EICAR Test Emails**: Standard antivirus test files
 - **Cynic Test Emails**: Password-protected VBS archives
 - **GTUBE Spam-Test Emails**: Single-message spam detector tests using canonical GTUBE string
+- **QR Phishing Emails**: Phishing emails where PhishTank URLs are encoded as QR codes in the email body and/or a PDF attachment
 - **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat)
 
 ### Email Providers

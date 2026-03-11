@@ -6,6 +6,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
+from email.mime.image import MIMEImage
 from email import encoders
 from pathlib import Path
 import logging
@@ -96,7 +97,7 @@ class SMTPClient:
                 pass
             self.connected = False
     
-    def send_email(self, to_addresses, subject, body, attachments=None, from_address=None, display_name=None):
+    def send_email(self, to_addresses, subject, body, attachments=None, from_address=None, display_name=None, html_body=None, inline_images=None):
         """
         Send an email with optional attachments.
         
@@ -120,8 +121,22 @@ class SMTPClient:
             if isinstance(to_addresses, str):
                 to_addresses = [to_addresses]
             
-            # Create message
-            msg = MIMEMultipart()
+            # Decide base message structure
+            has_html = html_body is not None
+            has_inline = bool(inline_images)
+
+            if has_html or has_inline:
+                # multipart/related with multipart/alternative for text+HTML and optional inline resources
+                msg = MIMEMultipart("related")
+                alternative = MIMEMultipart("alternative")
+                # Plain-text part (always include for compatibility)
+                alternative.attach(MIMEText(body, "plain"))
+                if has_html:
+                    alternative.attach(MIMEText(html_body, "html"))
+                msg.attach(alternative)
+            else:
+                # Simple multipart with plain-text body only
+                msg = MIMEMultipart()
             
             # Set from address with optional display name
             if from_address:
@@ -141,8 +156,25 @@ class SMTPClient:
             msg['To'] = ", ".join(to_addresses)
             msg['Subject'] = subject
             
-            # Add body
-            msg.attach(MIMEText(body, 'plain'))
+            # If we're not in HTML/inline mode, attach the plain-text body now
+            if not (has_html or has_inline):
+                msg.attach(MIMEText(body, "plain"))
+
+            # Add inline images if provided (expects list of dicts with keys: cid, data, subtype)
+            if has_inline:
+                for img in inline_images or []:
+                    try:
+                        cid = img.get("cid")
+                        data = img.get("data")
+                        subtype = img.get("subtype", "png")
+                        if not cid or data is None:
+                            continue
+                        image_part = MIMEImage(data, _subtype=subtype)
+                        image_part.add_header("Content-ID", f"<{cid}>")
+                        image_part.add_header("Content-Disposition", "inline", filename=f"{cid}.{subtype}")
+                        msg.attach(image_part)
+                    except Exception as e:
+                        logger.error(f"Failed to attach inline image {img!r}: {e}")
             
             # Add attachments
             if attachments:
