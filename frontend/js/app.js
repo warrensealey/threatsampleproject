@@ -119,6 +119,32 @@ function setupEmailSendModal() {
       await sendCustomEmail();
     });
 
+  // QR phishing modal handlers
+  document
+    .getElementById('qrPhishingModalClose')
+    ?.addEventListener('click', () => {
+      document.getElementById('qrPhishingModal').classList.add('hidden');
+    });
+
+  document
+    .getElementById('cancelQrPhishingBtn')
+    ?.addEventListener('click', () => {
+      document.getElementById('qrPhishingModal').classList.add('hidden');
+    });
+
+  document.getElementById('qrPhishingModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'qrPhishingModal') {
+      document.getElementById('qrPhishingModal').classList.add('hidden');
+    }
+  });
+
+  document
+    .getElementById('qrPhishingForm')
+    ?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      await submitQrPhishingFromModal();
+    });
+
   // Phishing warning modal handlers
   document
     .getElementById('phishingWarningConfirmBtn')
@@ -182,34 +208,56 @@ function setupSendButtons() {
 }
 
 function showQrPhishingDialog() {
-  // Ask for QR mode first
-  const modeChoice = prompt(
-    'Select QR mode: enter "body" for inline QR images, "pdf" for a PDF attachment, or "both" for both.',
-    'body'
-  );
-  if (!modeChoice) {
+  const modal = document.getElementById('qrPhishingModal');
+  const modeSelect = document.getElementById('qrModeSelect');
+  const countInput = document.getElementById('qrCountInput');
+  const recipientsInput = document.getElementById('qrRecipientsInput');
+
+  if (!modal || !modeSelect || !countInput || !recipientsInput) {
     return;
   }
-  const qrMode = modeChoice.toLowerCase();
+
+  // Reset fields
+  modeSelect.value = 'body';
+  countInput.value = '1';
+  if (defaultRecipients.length > 0) {
+    recipientsInput.value = defaultRecipients.join(', ');
+  } else {
+    recipientsInput.value = '';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+async function submitQrPhishingFromModal() {
+  const modal = document.getElementById('qrPhishingModal');
+  const modeSelect = document.getElementById('qrModeSelect');
+  const countInput = document.getElementById('qrCountInput');
+  const recipientsInput = document.getElementById('qrRecipientsInput');
+
+  if (!modal || !modeSelect || !countInput || !recipientsInput) {
+    return;
+  }
+
+  const qrMode = (modeSelect.value || 'body').toLowerCase();
   if (!['body', 'pdf', 'both'].includes(qrMode)) {
-    alert('Invalid QR mode. Please enter body, pdf, or both.');
+    alert('Invalid QR mode selected.');
     return;
   }
 
-  // Number of emails
-  const countValue = prompt('How many QR phishing emails to send?', '1');
-  if (!countValue) return;
+  const parsedCount = parseInt(countInput.value, 10) || 0;
+  if (parsedCount < 1) {
+    alert('Count must be at least 1.');
+    return;
+  }
 
-  // Pre-populate with default recipients if available
-  const defaultRecipientsStr =
-    defaultRecipients.length > 0 ? defaultRecipients.join(', ') : '';
-  const recipients = prompt(
-    'Enter recipient email addresses (comma-separated):',
-    defaultRecipientsStr
-  );
-  if (!recipients) return;
+  const recipientsStr = recipientsInput.value.trim();
+  if (!recipientsStr) {
+    alert('Recipients are required.');
+    return;
+  }
 
-  const recipientList = recipients
+  const recipientList = recipientsStr
     .split(',')
     .map((r) => r.trim())
     .filter((r) => r);
@@ -219,13 +267,9 @@ function showQrPhishingDialog() {
     return;
   }
 
-  const parsedCount = parseInt(countValue, 10);
-  if (!parsedCount || parsedCount < 1) {
-    alert('Invalid count');
-    return;
-  }
-
-  sendQrPhishingEmails(parsedCount, recipientList, qrMode);
+  // Close the modal and send
+  modal.classList.add('hidden');
+  await sendQrPhishingEmails(parsedCount, recipientList, qrMode);
 }
 
 async function sendQrPhishingEmails(count, recipients, qrMode) {

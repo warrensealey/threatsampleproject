@@ -124,19 +124,41 @@ class SMTPClient:
             # Decide base message structure
             has_html = html_body is not None
             has_inline = bool(inline_images)
+            has_attachments = bool(attachments)
 
+            # msg is always the top-level message we send
+            # body_container is where inline resources should attach
             if has_html or has_inline:
-                # multipart/related with multipart/alternative for text+HTML and optional inline resources
-                msg = MIMEMultipart("related")
-                alternative = MIMEMultipart("alternative")
-                # Plain-text part (always include for compatibility)
-                alternative.attach(MIMEText(body, "plain"))
-                if has_html:
-                    alternative.attach(MIMEText(html_body, "html"))
-                msg.attach(alternative)
+                if has_attachments:
+                    # Top-level multipart/mixed for attachments, with nested
+                    # multipart/related that contains text/HTML and inline images.
+                    msg = MIMEMultipart("mixed")
+                    related = MIMEMultipart("related")
+                    alternative = MIMEMultipart("alternative")
+                    alternative.attach(MIMEText(body, "plain"))
+                    if has_html:
+                        alternative.attach(MIMEText(html_body, "html"))
+                    related.attach(alternative)
+                    msg.attach(related)
+                    body_container = related
+                else:
+                    # No attachments; multipart/related with multipart/alternative
+                    msg = MIMEMultipart("related")
+                    alternative = MIMEMultipart("alternative")
+                    alternative.attach(MIMEText(body, "plain"))
+                    if has_html:
+                        alternative.attach(MIMEText(html_body, "html"))
+                    msg.attach(alternative)
+                    body_container = msg
             else:
-                # Simple multipart with plain-text body only
-                msg = MIMEMultipart()
+                if has_attachments:
+                    # Plain-text body with attachments: multipart/mixed
+                    msg = MIMEMultipart("mixed")
+                    msg.attach(MIMEText(body, "plain"))
+                else:
+                    # Plain-text only, no attachments
+                    msg = MIMEText(body, "plain")
+                body_container = msg
             
             # Set from address with optional display name
             if from_address:
@@ -156,10 +178,6 @@ class SMTPClient:
             msg['To'] = ", ".join(to_addresses)
             msg['Subject'] = subject
             
-            # If we're not in HTML/inline mode, attach the plain-text body now
-            if not (has_html or has_inline):
-                msg.attach(MIMEText(body, "plain"))
-
             # Add inline images if provided (expects list of dicts with keys: cid, data, subtype)
             if has_inline:
                 for img in inline_images or []:
@@ -172,7 +190,7 @@ class SMTPClient:
                         image_part = MIMEImage(data, _subtype=subtype)
                         image_part.add_header("Content-ID", f"<{cid}>")
                         image_part.add_header("Content-Disposition", "inline", filename=f"{cid}.{subtype}")
-                        msg.attach(image_part)
+                        body_container.attach(image_part)
                     except Exception as e:
                         logger.error(f"Failed to attach inline image {img!r}: {e}")
             

@@ -123,6 +123,7 @@ class QRPhishingGenerator:
             raise ValueError("No recipients specified")
 
         mode = self._normalise_qr_mode(qr_mode)
+        mode_label = mode.upper()
 
         # Reuse PhishTank URL fetching from the existing phishing generator
         if not self.phishing_gen.phishing_urls:
@@ -153,8 +154,13 @@ inside an attached PDF, or both.
 
 This email is generated for security testing purposes."""
 
+            if count > 1:
+                subject = f"{subject_template} [{mode_label}] - {i+1}"
+            else:
+                subject = f"{subject_template} [{mode_label}]"
+
             email_data: Dict[str, Any] = {
-                "subject": f"{subject_template} - {i+1}" if count > 1 else subject_template,
+                "subject": subject,
                 "body": text_body,
                 "recipients": recipients,
                 "type": "qr_phishing",
