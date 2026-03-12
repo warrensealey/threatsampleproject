@@ -85,10 +85,14 @@ def get_email_client_config_route():
     try:
         config_name = request.args.get('name', None)
         config = get_email_client_config(config_name)
-        # Don't return password
+        # Don't return password; instead, provide a hint flag.
         safe_config = config.copy()
-        if 'password' in safe_config:
-            safe_config['password'] = '***' if safe_config['password'] else ''
+        if "password" in safe_config:
+            safe_config["has_password"] = bool(safe_config.get("password"))
+            safe_config["password"] = "***" if safe_config["password"] else ""
+        else:
+            safe_config["has_password"] = False
+            safe_config["password"] = ""
         return jsonify(safe_config)
     except Exception as e:
         logger.error(f"Error getting email client config: {e}")
@@ -104,16 +108,35 @@ def update_email_client_config_route():
         ... (other email client config fields)
     """
     try:
-        data = request.json
-        config_name = data.get('config_name')
+        data = request.json or {}
+        config_name = data.get("config_name")
 
         if not config_name:
             return jsonify({"error": "config_name is required"}), 400
 
         # Remove config_name from data before saving
-        config_data = {k: v for k, v in data.items() if k != 'config_name'}
+        incoming_config = {k: v for k, v in data.items() if k != "config_name"}
 
-        save_email_client_config(config_name, config_data)
+        # Load existing config so we can merge non-destructively, especially for password.
+        existing_config = get_email_client_config(config_name) or {}
+        merged_config = existing_config.copy()
+
+        # Handle password semantics explicitly:
+        # - If password is omitted or blank, keep existing password.
+        # - If password is a non-empty string, replace existing password.
+        password_provided = "password" in incoming_config
+        if password_provided:
+            new_password = incoming_config.get("password")
+            if isinstance(new_password, str) and new_password:
+                merged_config["password"] = new_password
+            # Remove password from the generic update payload so we don't
+            # accidentally overwrite it with an empty string.
+            incoming_config.pop("password", None)
+
+        # Merge the rest of the fields (server, ports, flags, etc.)
+        merged_config.update(incoming_config)
+
+        save_email_client_config(config_name, merged_config)
         return jsonify({"success": True, "config_name": config_name})
     except Exception as e:
         logger.error(f"Error updating email client config: {e}")
@@ -391,15 +414,18 @@ def test_email_config():
         from backend.smtp_client import SMTPClient
         from datetime import datetime
 
-        data = request.json
-        recipient = data.get('recipient')
-        email_client_config = data.get('email_client_config')
+        data = request.json or {}
+        recipient = data.get("recipient")
+        email_client_config = data.get("email_client_config")
+        config_name = data.get("config_name")
 
         if not recipient:
             return jsonify({"error": "No recipient specified"}), 400
 
         if not email_client_config:
-            email_client_config = get_email_client_config()
+            # If a specific config_name is provided, use that; otherwise use
+            # the current active email client configuration.
+            email_client_config = get_email_client_config(config_name)
 
         # Build SMTP config from email client config
         # For most email providers, SMTP uses the same credentials but different server
