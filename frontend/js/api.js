@@ -187,10 +187,18 @@ class APIClient {
   }
 
   // Test email configuration
-  async testEmailConfig(recipient, emailClientConfig) {
+  async testEmailConfig(recipient, emailClientConfig = null, configName = null) {
+    const body = { recipient };
+    if (emailClientConfig) {
+      body.email_client_config = emailClientConfig;
+    }
+    if (configName) {
+      body.config_name = configName;
+    }
+
     return this.request('/test/email', {
       method: 'POST',
-      body: { recipient, email_client_config: emailClientConfig },
+      body,
     });
   }
 

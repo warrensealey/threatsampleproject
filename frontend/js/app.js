@@ -1281,6 +1281,7 @@ const emailProviderConfigs = {
 
 // Configuration functions
 let currentConfigName = null;
+let currentConfigHasPassword = false;
 
 async function initConfig() {
   setupConfigForm();
@@ -1314,6 +1315,7 @@ function setupConfigSelector() {
       if (selectedName) {
         // Load existing config
         currentConfigName = selectedName;
+        currentConfigHasPassword = false;
         configNameInput.value = selectedName;
         configNameInput.disabled = true;
         configNameGroup.style.display = 'none';
@@ -1321,10 +1323,12 @@ function setupConfigSelector() {
       } else {
         // Create new config
         currentConfigName = null;
+        currentConfigHasPassword = false;
         configNameInput.value = '';
         configNameInput.disabled = false;
         configNameGroup.style.display = 'block';
         clearForm();
+        updatePasswordHint(false, false);
       }
     });
   }
@@ -1456,6 +1460,25 @@ function clearForm() {
   document.getElementById('smtpUseTLS').checked = true;
   document.getElementById('smtpUseSSL').checked = false;
   document.getElementById('emailProvider').value = 'gmx';
+  currentConfigHasPassword = false;
+  updatePasswordHint(false, false);
+}
+
+function updatePasswordHint(isExistingConfig, hasPassword) {
+  const hintEl = document.getElementById('imapPasswordHint');
+  const passwordInput = document.getElementById('imapPassword');
+  if (!hintEl || !passwordInput) return;
+
+  if (!isExistingConfig) {
+    hintEl.textContent =
+      'Enter the password for this email account. This is required when creating a new configuration.';
+  } else if (hasPassword) {
+    hintEl.textContent =
+      'A password is already stored; leave this blank to keep the existing password, or enter a new one to replace it.';
+  } else {
+    hintEl.textContent =
+      'No password is currently stored for this configuration; enter one to enable sending emails.';
+  }
 }
 
 function setupConfigForm() {
@@ -1585,6 +1608,8 @@ async function loadConfig(configName = null) {
         document.getElementById('imapPassword').value =
           emailClientConfig.password || '';
       }
+      currentConfigHasPassword = !!emailClientConfig.has_password;
+      updatePasswordHint(true, currentConfigHasPassword);
       document.getElementById('imapUseSSL').checked =
         emailClientConfig.use_ssl !== false;
       document.getElementById('imapUseSTARTTLS').checked =
@@ -1624,6 +1649,8 @@ async function loadConfig(configName = null) {
         providerSelect.value = 'gmx';
         populateProviderSettings(emailProviderConfigs.gmx);
       }
+      currentConfigHasPassword = false;
+      updatePasswordHint(false, false);
     }
 
     // Load email generation config
@@ -1781,12 +1808,24 @@ async function saveEmailClientConfig() {
     return;
   }
 
+  const isExistingConfig = !!currentConfigName;
+  const passwordValue = document.getElementById('imapPassword').value;
+
+  // For new configurations, password is required
+  if (!isExistingConfig && !passwordValue) {
+    showConfigSaveModal(
+      'Missing Password',
+      'Please enter a password when creating a new email client configuration.',
+      'error'
+    );
+    return;
+  }
+
   const config = {
     config_name: configName,
     imap_server: document.getElementById('imapServer').value,
     imap_port: parseInt(document.getElementById('imapPort').value),
     username: document.getElementById('imapUsername').value,
-    password: document.getElementById('imapPassword').value,
     use_ssl: document.getElementById('imapUseSSL').checked,
     use_starttls: document.getElementById('imapUseSTARTTLS').checked,
     smtp_server: document.getElementById('smtpServer').value,
@@ -1794,6 +1833,12 @@ async function saveEmailClientConfig() {
     smtp_use_tls: document.getElementById('smtpUseTLS').checked,
     smtp_use_ssl: document.getElementById('smtpUseSSL').checked,
   };
+
+  // For existing configs, only send password if user entered a new one.
+  // For new configs, password must be present (validated above) and is always sent.
+  if (!isExistingConfig || passwordValue) {
+    config.password = passwordValue;
+  }
 
   try {
     await api.updateEmailClientConfig(config);
@@ -1803,6 +1848,12 @@ async function saveEmailClientConfig() {
       'success'
     );
     currentConfigName = configName;
+    if (!isExistingConfig) {
+      currentConfigHasPassword = !!passwordValue;
+    } else if (passwordValue) {
+      currentConfigHasPassword = true;
+    }
+    updatePasswordHint(true, currentConfigHasPassword);
     await loadEmailClientConfigs();
 
     // Update selector to show saved config
@@ -1883,19 +1934,14 @@ async function testEmailConfiguration() {
     smtp_use_ssl: document.getElementById('smtpUseSSL').checked,
   };
 
-  // Validate configuration
-  if (
-    !emailClientConfig.imap_server ||
-    !emailClientConfig.username ||
-    !emailClientConfig.password
-  ) {
-    showConfigSaveModal(
-      'Missing Required Fields',
-      'Please fill in IMAP server, username, and password before testing the configuration.',
-      'error'
-    );
-    return;
-  }
+  const hasFormPassword = !!emailClientConfig.password;
+  const isExistingConfig = !!currentConfigName;
+
+  // If this is an existing saved configuration with a stored password and the
+  // password field is left blank, rely on the backend-stored config instead of
+  // sending a blank password that would fail authentication.
+  const shouldUseStoredConfigOnly =
+    isExistingConfig && currentConfigHasPassword && !hasFormPassword;
 
   // Show modal
   const modal = document.getElementById('testEmailModal');
@@ -1908,7 +1954,31 @@ async function testEmailConfiguration() {
   document.getElementById('testEmailActions').classList.add('hidden');
 
   try {
-    const result = await api.testEmailConfig(recipient, emailClientConfig);
+    let result;
+
+    if (shouldUseStoredConfigOnly) {
+      // Use the stored configuration for the currently selected config name
+      // (including its stored, encrypted password) without sending a blank
+      // password from the form.
+      result = await api.testEmailConfig(recipient, null, currentConfigName);
+    } else {
+      // Validate configuration from the form
+      if (
+        !emailClientConfig.imap_server ||
+        !emailClientConfig.username ||
+        !emailClientConfig.password
+      ) {
+        showConfigSaveModal(
+          'Missing Required Fields',
+          'Please fill in IMAP server, username, and password before testing the configuration.',
+          'error'
+        );
+        modal.classList.add('hidden');
+        return;
+      }
+
+      result = await api.testEmailConfig(recipient, emailClientConfig);
+    }
 
     if (result.success) {
       // Show success message
