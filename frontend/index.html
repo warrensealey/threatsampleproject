@@ -160,6 +160,25 @@
                     <small style="color: #666; display: block; margin-top: 5px;">Select a harmless dummy attachment file type</small>
                 </div>
                 <div class="form-group">
+                    <label for="customQrUrl">QR URL (optional):</label>
+                    <input type="text" id="customQrUrl" placeholder="https://example.com/path">
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        If set, this URL can be encoded as a QR code in the email body and/or a PDF attachment.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="customQrMode">QR Mode:</label>
+                    <select id="customQrMode" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="none" selected>No QR code</option>
+                        <option value="body">Inline QR in email body</option>
+                        <option value="pdf">QR in PDF attachment</option>
+                        <option value="both">Inline QR + PDF attachment</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Choose how the QR code for the URL (if provided) should be included.
+                    </small>
+                </div>
+                <div class="form-group">
                     <label for="customRecipients">Recipients: <span style="color: red;">*</span></label>
                     <input type="text" id="customRecipients" required placeholder="email1@example.com, email2@example.com">
                 </div>

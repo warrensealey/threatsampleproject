@@ -166,18 +166,29 @@ class APIClient {
     subject,
     body,
     displayName,
-    attachmentType
+    attachmentType,
+    qrUrl,
+    qrMode
   ) {
+    const payload = {
+      count,
+      recipients,
+      subject,
+      body,
+      display_name: displayName,
+      attachment_type: attachmentType,
+    };
+
+    if (qrUrl) {
+      payload.qr_url = qrUrl;
+    }
+    if (qrMode) {
+      payload.qr_mode = qrMode;
+    }
+
     return this.request('/send/custom', {
       method: 'POST',
-      body: {
-        count,
-        recipients,
-        subject,
-        body,
-        display_name: displayName,
-        attachment_type: attachmentType,
-      },
+      body: payload,
     });
   }
 

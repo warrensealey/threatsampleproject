@@ -130,8 +130,17 @@ class EmailGenerator:
             logger.error(f"Failed to send GTUBE emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
     
-    def send_custom_emails(self, count=1, recipients=None, subject=None, body=None,
-                           display_name=None, attachment_type=None):
+    def send_custom_emails(
+        self,
+        count=1,
+        recipients=None,
+        subject=None,
+        body=None,
+        display_name=None,
+        attachment_type=None,
+        qr_url=None,
+        qr_mode="none",
+    ):
         """
         Generate and send custom emails with configurable fields.
 
@@ -142,13 +151,22 @@ class EmailGenerator:
             body: Email body text
             display_name: Sender display name (optional)
             attachment_type: Attachment extension (.zip, .com, .scr, .pdf, .bat) or None
+            qr_url: Optional URL to encode as a QR code
+            qr_mode: 'none', 'body', 'pdf', or 'both'
 
         Returns:
             Dictionary with results
         """
         try:
             emails = self.custom_gen.generate_emails(
-                count, recipients, subject, body, display_name, attachment_type
+                count=count,
+                recipients=recipients,
+                subject=subject,
+                body=body,
+                display_name=display_name,
+                attachment_type=attachment_type,
+                qr_url=qr_url,
+                qr_mode=qr_mode,
             )
             results = self._send_emails(emails, "custom")
             return results

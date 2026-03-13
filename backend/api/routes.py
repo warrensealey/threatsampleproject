@@ -373,12 +373,14 @@ def send_custom():
     """Send custom emails with configurable fields."""
     try:
         data = request.json
-        count = data.get('count', 1)
-        recipients = data.get('recipients', [])
-        subject = data.get('subject')
-        body = data.get('body')
-        display_name = data.get('display_name')
-        attachment_type = data.get('attachment_type')
+        count = data.get("count", 1)
+        recipients = data.get("recipients", [])
+        subject = data.get("subject")
+        body = data.get("body")
+        display_name = data.get("display_name")
+        attachment_type = data.get("attachment_type")
+        qr_url = data.get("qr_url")
+        qr_mode = (data.get("qr_mode") or "none").lower()
 
         if not recipients:
             return jsonify({"error": "No recipients specified"}), 400
@@ -390,8 +392,43 @@ def send_custom():
             return jsonify({"error": "Body is required"}), 400
 
         # Validate attachment_type if provided
-        if attachment_type and attachment_type not in ['.zip', '.com', '.scr', '.pdf', '.bat']:
-            return jsonify({"error": "Invalid attachment_type. Must be one of: .zip, .com, .scr, .pdf, .bat"}), 400
+        if attachment_type and attachment_type not in [
+            ".zip",
+            ".com",
+            ".scr",
+            ".pdf",
+            ".bat",
+        ]:
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid attachment_type. Must be one of: .zip, .com, .scr, .pdf, .bat"
+                    }
+                ),
+                400,
+            )
+
+        # Validate QR mode if provided
+        if qr_mode not in ("none", "body", "pdf", "both"):
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid qr_mode. Must be one of: none, body, pdf, both"
+                    }
+                ),
+                400,
+            )
+
+        # If a QR mode other than "none" is requested, a URL must be provided
+        if qr_mode != "none" and not qr_url:
+            return (
+                jsonify(
+                    {
+                        "error": "qr_url is required when qr_mode is 'body', 'pdf', or 'both'"
+                    }
+                ),
+                400,
+            )
 
         result = email_generator.send_custom_emails(
             count=count,
@@ -399,7 +436,9 @@ def send_custom():
             subject=subject,
             body=body,
             display_name=display_name,
-            attachment_type=attachment_type
+            attachment_type=attachment_type,
+            qr_url=qr_url,
+            qr_mode=qr_mode,
         )
         return jsonify(result)
     except Exception as e:

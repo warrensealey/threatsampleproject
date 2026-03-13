@@ -48,23 +48,21 @@ class QRPhishingGenerator:
         img.save(buffer, format="PNG")
         return buffer.getvalue()
 
-    def _build_html_body(self, url: str, cid: str) -> str:
-        """Build a simple HTML body that references the QR image by Content-ID."""
+    def _build_html_body(self, cid: str) -> str:
+        """Build a simple HTML body that references the QR image by Content-ID without exposing the raw URL."""
         return f"""<html>
   <body>
-    <p>This email contains a QR code that encodes a phishing URL from PhishTank.</p>
-    <p><strong>Encoded URL:</strong><br>{url}</p>
-    <p>Scan the QR code below (in a controlled test environment only):</p>
+    <p>This email contains a QR code that encodes a phishing URL from PhishTank for testing purposes.</p>
+    <p>Scan the QR code below (in a controlled test environment only).</p>
     <p><img src="cid:{cid}" alt="Phishing QR Code" style="max-width: 300px; height: auto;"></p>
-    <p>This email is generated for security testing purposes.</p>
+    <p>The underlying URL is intentionally not shown in clear text.</p>
   </body>
 </html>"""
 
-    def _create_qr_pdf(self, url: str, png_bytes: bytes) -> Path:
-        """Create a simple one-page PDF containing the QR code and URL text."""
+    def _create_qr_pdf(self, png_bytes: bytes) -> Path:
+        """Create a simple one-page PDF containing the QR code without exposing the raw URL."""
         temp_dir = Path(tempfile.gettempdir())
-        safe_suffix = "".join(ch for ch in url if ch.isalnum())[:16]
-        pdf_path = temp_dir / f"qr_phishing_{safe_suffix or 'url'}.pdf"
+        pdf_path = temp_dir / "qr_phishing.pdf"
 
         try:
             c = canvas.Canvas(str(pdf_path), pagesize=letter)
@@ -74,12 +72,11 @@ class QRPhishingGenerator:
             c.setFont("Helvetica-Bold", 16)
             c.drawString(72, height - 72, "QR Phishing Test Email")
 
-            # URL text
+            # Description text (no raw URL)
             c.setFont("Helvetica", 10)
             text_obj = c.beginText(72, height - 110)
-            text_obj.textLine("This PDF contains a QR code that encodes the following URL:")
-            text_obj.textLine("")
-            text_obj.textLine(url)
+            text_obj.textLine("This PDF contains a QR code that encodes a phishing URL for testing.")
+            text_obj.textLine("The actual URL is intentionally not shown in clear text.")
             c.drawText(text_obj)
 
             # QR image
@@ -142,15 +139,14 @@ class QRPhishingGenerator:
             url = self.phishing_gen.phishing_urls[i % len(self.phishing_gen.phishing_urls)]
 
             # Always include a plain-text body for compatibility
-            text_body = f"""QR Phishing Test Email
+            text_body = """QR Phishing Test Email
 
 This email encodes a phishing URL from PhishTank into a QR code for testing.
 
-Encoded URL:
-{url}
-
 Depending on configuration, the QR code is included either inline in the email body,
 inside an attached PDF, or both.
+
+For safety, the underlying URL is only present inside the QR code and is not shown in clear text.
 
 This email is generated for security testing purposes."""
 
@@ -172,7 +168,7 @@ This email is generated for security testing purposes."""
 
             if mode in ("body", "both"):
                 cid = f"qr-{i}"
-                email_data["html_body"] = self._build_html_body(url, cid)
+                email_data["html_body"] = self._build_html_body(cid)
                 email_data["inline_images"] = [
                     {
                         "cid": cid,
@@ -182,7 +178,7 @@ This email is generated for security testing purposes."""
                 ]
 
             if mode in ("pdf", "both"):
-                pdf_path = self._create_qr_pdf(url, png_bytes)
+                pdf_path = self._create_qr_pdf(png_bytes)
                 email_data.setdefault("attachments", []).append(str(pdf_path))
 
             emails.append(email_data)

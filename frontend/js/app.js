@@ -608,6 +608,14 @@ function showCustomEmailModal() {
   document.getElementById('customDisplayName').value = '';
   document.getElementById('customAttachment').value = '';
   document.getElementById('customCount').value = '1';
+  const qrUrlInput = document.getElementById('customQrUrl');
+  const qrModeSelect = document.getElementById('customQrMode');
+  if (qrUrlInput) {
+    qrUrlInput.value = '';
+  }
+  if (qrModeSelect) {
+    qrModeSelect.value = 'none';
+  }
 
   modal.classList.remove('hidden');
 }
@@ -617,6 +625,9 @@ async function sendCustomEmail() {
   const body = document.getElementById('customBody').value.trim();
   const displayName = document.getElementById('customDisplayName').value.trim();
   const attachmentType = document.getElementById('customAttachment').value;
+  const qrUrl = document.getElementById('customQrUrl').value.trim();
+  const qrModeRaw = document.getElementById('customQrMode').value || 'none';
+  const qrMode = qrModeRaw.toLowerCase();
   const recipientsStr = document
     .getElementById('customRecipients')
     .value.trim();
@@ -630,6 +641,23 @@ async function sendCustomEmail() {
 
   if (!body) {
     showAlert('Body is required', 'error');
+    return;
+  }
+
+  // Validate QR settings
+  if (!['none', 'body', 'pdf', 'both'].includes(qrMode)) {
+    showAlert(
+      'Invalid QR mode. Please choose one of: None, Inline, PDF, Both.',
+      'error'
+    );
+    return;
+  }
+
+  if (qrMode !== 'none' && !qrUrl) {
+    showAlert(
+      'Please provide a URL if you want to include a QR code, or set QR Mode to "No QR code".',
+      'error'
+    );
     return;
   }
 
@@ -683,7 +711,9 @@ async function sendCustomEmail() {
       subject,
       body,
       displayName || null,
-      attachmentType || null
+      attachmentType || null,
+      qrUrl || null,
+      qrMode || 'none'
     );
 
     // Build connection details text
@@ -711,6 +741,8 @@ Type: Custom
 Subject: ${subject}
 Display Name: ${displayName || 'N/A'}
 Attachment: ${attachmentType || 'None'}
+QR URL: ${qrUrl || 'None'}
+QR Mode: ${qrMode !== 'none' ? qrMode.toUpperCase() : 'NONE'}
 Total: ${result.total || count}
 Sent: ${result.sent || 0}
 Failed: ${result.failed || 0}`;
