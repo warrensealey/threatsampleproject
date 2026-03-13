@@ -9,7 +9,7 @@ Full-stack Python web application for generating and sending test emails (phishi
 - **Multi-Provider Support**: GMX, Gmail, Yahoo, iCloud, Zoho, Outlook.com, AOL, Office365
 - **Test Email Generation**: Create and send phishing, EICAR, Cynic, GTUBE, and custom test emails
 - **GTUBE Spam Test**: Fire a single spam-test message containing the canonical GTUBE string ([spec](https://en.wikipedia.org/wiki/GTUBE)) to validate anti-spam controls
-- **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments
+- **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments, with optional QR encoding of a user-specified URL into the email body and/or a PDF attachment
 - **Multiple Email Configurations**: Save and manage multiple email client configurations (GMX, Gmail, Yahoo, etc.)
 - **SMTP Integration**: Send emails through configured SMTP servers
 - **Web Interface**: Full configuration and management through HTML/JavaScript frontend
@@ -97,11 +97,11 @@ Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions
 1. Navigate to the Dashboard
 2. Select the type of test email:
    - **Phishing Emails**: Test emails with PhishTank URLs
-   - **QR Phishing Emails**: Phishing emails where PhishTank URLs are encoded as QR codes embedded in the email body and/or a simple PDF attachment
+   - **QR Phishing Emails**: Phishing emails where PhishTank URLs are encoded as QR codes embedded in the email body and/or a simple PDF attachment. For safety, the underlying URLs are only present inside the QR code and are not printed in clear text.
    - **EICAR Test Emails**: Standard antivirus test files
    - **Cynic Test Emails**: Password-protected VBS archives
    - **GTUBE Spam Test**: Single-message spam detector test using the GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X`
-   - **Custom Email**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat)
+   - **Custom Email**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat), plus optional QR encoding of a user-specified URL into the email body and/or a PDF attachment (URL only present inside the QR code).
 3. Enter recipient addresses and count (for custom emails, fill in the form fields)
 4. Review connection details in the results modal
 
@@ -146,6 +146,12 @@ threatsampleproject/
 ## Version
 
 Current version: **1.4.0**
+
+### What's new in 1.5.0
+
+- **Per-configuration password persistence**: Email client passwords are stored per configuration and encrypted at rest. When editing an existing configuration, leaving the password field blank preserves the stored password instead of clearing it; new configurations still require an initial password.
+- **Custom Email QR URL support**: The Custom Email flow can optionally encode a user-specified URL as a QR code embedded in the email body, a PDF attachment, or both.
+- **Safer QR content**: All QR-based emails (QR Phishing and Custom Email QR modes) now keep the underlying URLs only inside the QR code payload and do not print them in clear text in HTML, plain-text bodies, or PDFs.
 
 ### What's new in 1.4.0
 

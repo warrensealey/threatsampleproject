@@ -6,6 +6,7 @@ the email body or inside a PDF attachment, or both.
 """
 import tempfile
 import zipfile
+import uuid
 from io import BytesIO
 from pathlib import Path
 import logging
@@ -40,7 +41,8 @@ class CustomEmailGenerator:
         """
         if output_path is None:
             temp_dir = Path(tempfile.gettempdir())
-            output_path = temp_dir / f"dummy{extension}"
+            unique_id = uuid.uuid4().hex
+            output_path = temp_dir / f"dummy_{unique_id}{extension}"
         else:
             output_path = Path(output_path)
         
@@ -189,10 +191,17 @@ startxref
   </body>
 </html>"""
 
-    def _create_qr_pdf(self, png_bytes: bytes, title: str = "Custom Email QR Code") -> Path:
-        """Create a simple one-page PDF containing the QR code without exposing the raw URL."""
+    def _create_qr_pdf(
+        self, png_bytes: bytes, title: str = "Custom Email QR Code"
+    ) -> Path:
+        """Create a simple one-page PDF containing the QR code without exposing the raw URL.
+
+        A random UUID is used to make the filename unique per email so that
+        parallel or repeated sends do not overwrite each other's PDF files.
+        """
         temp_dir = Path(tempfile.gettempdir())
-        pdf_path = temp_dir / "custom_qr.pdf"
+        unique_id = uuid.uuid4().hex
+        pdf_path = temp_dir / f"custom_qr_{unique_id}.pdf"
 
         try:
             c = canvas.Canvas(str(pdf_path), pagesize=letter)
@@ -296,9 +305,7 @@ startxref
 
                     if mode in ("body", "both"):
                         cid = f"custom-qr-{i}"
-                        email_data["html_body"] = self._build_qr_html_body(
-                            body, cid
-                        )
+                        email_data["html_body"] = self._build_qr_html_body(body, cid)
                         email_data["inline_images"] = [
                             {
                                 "cid": cid,
@@ -311,7 +318,8 @@ startxref
                         pdf_path = self._create_qr_pdf(png_bytes)
                         email_data.setdefault("attachments", []).append(str(pdf_path))
                 except Exception as e:
-                    logger.error(f"Failed to add QR content to custom email: {e}")
+                    logger.error("Failed to add QR content to custom email", exc_info=True)
+                    raise
             
             emails.append(email_data)
         

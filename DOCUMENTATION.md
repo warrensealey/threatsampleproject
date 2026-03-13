@@ -47,10 +47,12 @@ threatsampleproject/
 │   ├── api/                # API routes
 │   │   └── routes.py       # REST API endpoints
 │   ├── generators/         # Email generators
-│   │   ├── phishing.py    # Phishing email generator
-│   │   ├── eicar.py       # EICAR test generator
-│   │   ├── cynic.py       # Cynic test generator
-│   │   └── gtube.py       # GTUBE spam-test generator
+│   │   ├── phishing.py     # Phishing email generator
+│   │   ├── eicar.py        # EICAR test generator
+│   │   ├── cynic.py        # Cynic test generator
+│   │   ├── gtube.py        # GTUBE spam-test generator
+│   │   ├── qr_phishing.py  # QR phishing email generator
+│   │   └── custom.py       # Custom email generator (including optional QR URL support)
 │   ├── app.py             # Flask application
 │   ├── config.py          # Configuration management
 │   ├── email_generator.py # Email generation coordinator
@@ -183,7 +185,9 @@ Send custom emails with configurable fields.
   "subject": "Custom Email Subject",
   "body": "Custom email body text",
   "display_name": "John Doe",
-  "attachment_type": ".zip"
+  "attachment_type": ".zip",
+  "qr_url": "https://example.com/path",
+  "qr_mode": "none|body|pdf|both"
 }
 ```
 
@@ -194,6 +198,12 @@ Send custom emails with configurable fields.
 - `body` (string, required): Email body text
 - `display_name` (string, optional): Sender display name
 - `attachment_type` (string, optional): Attachment file extension - one of: `.zip`, `.com`, `.scr`, `.pdf`, `.bat`, or `null` for no attachment
+- `qr_url` (string, optional): URL to encode as a QR code for this custom email; required if `qr_mode` is `body`, `pdf`, or `both`
+- `qr_mode` (string, optional): How (or whether) to include the QR code for `qr_url`; one of:
+  - `none` (default): do not include a QR code
+  - `body`: embed the QR code inline in the HTML body
+  - `pdf`: include the QR code in a generated PDF attachment
+  - `both`: include the QR code inline and in a PDF attachment
 
 ### Test Endpoints
 
@@ -327,7 +337,8 @@ QR phishing emails take real phishing URLs from PhishTank and encode them as QR 
   - Inline QR image in the email body
   - QR code inside a generated PDF attachment
   - Both inline and PDF in the same email
-- Plain-text body always included for compatibility, describing the encoded URL and QR purpose
+- Plain-text body always included for compatibility, describing the presence and purpose of the QR phishing URL without showing the actual URL text in clear form
+- The underlying phishing URL is present only inside the QR code payload and is not printed in clear text in the HTML body or PDF attachment
 
 ### Custom Emails
 
@@ -349,6 +360,10 @@ Custom emails allow full control over email content and appearance for flexible 
   - Save commonly used combinations of subject, body, display name, and attachment type as named templates.
   - Select a template from the dropdown in the Custom Email modal to instantly populate the form.
   - Manage (list and delete) saved templates from the Configuration page.
+- **QR URL support**:
+  - Optional QR URL field in the Custom Email modal allows encoding a user-provided URL into a QR code.
+  - QR modes (None / Body / PDF / Both) control whether the QR appears inline in the HTML body, in a generated PDF attachment, or both.
+  - For safety, the underlying URL is only encoded inside the QR code and is not printed in clear text in the email body or PDF.
 
 ## Configuration
 
@@ -415,7 +430,7 @@ The application supports `.env` file for environment-specific configuration (via
    - Click "Send EICAR Emails" for antivirus tests
    - Click "Send Cynic Emails" for advanced tests
    - Click "Send GTUBE Email" for spam filter tests
-   - Click "Send Custom Email" for fully customizable emails
+   - Click "Send Custom Email" for fully customizable emails, including optional QR encoding of a user-specified URL into the body and/or a PDF attachment
    - Click "Send GTUBE Email" to send the canonical GTUBE spam-test string (single message)
 
 3. **Enter Details**:
@@ -570,12 +585,15 @@ See [INSTALLATION.md](INSTALLATION.md) for detailed Docker setup instructions.
    chmod 600 data/config.json
    chmod 600 data/.encryption_key  # if using the key file
    ```
+   - Email client passwords are stored per named configuration and are never returned in clear text from the API; when editing an existing configuration, leaving the password field blank preserves the stored password instead of clearing it, while new configurations still require an initial password.
 
 2. **Network Security**: The application runs on HTTP by default. For production, use HTTPS with a reverse proxy.
 
 3. **Firewall**: Restrict access to the application port (5000) to trusted networks only.
 
 4. **Email Provider Security**: Use app-specific passwords when available. Enable 2FA on email accounts.
+
+5. **QR URL handling**: QR-based phishing and custom email features intentionally avoid printing raw URLs in clear text in email bodies or PDFs; URLs are encoded only inside QR code payloads to reduce the risk of accidental link-clicking or copy/paste, while still allowing realistic QR-based security testing.
 
 ## Development
 

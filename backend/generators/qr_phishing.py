@@ -5,6 +5,7 @@ and/or placed into a simple PDF attachment.
 """
 import logging
 import tempfile
+import uuid
 from io import BytesIO
 from pathlib import Path
 from typing import List, Dict, Any
@@ -60,9 +61,14 @@ class QRPhishingGenerator:
 </html>"""
 
     def _create_qr_pdf(self, png_bytes: bytes) -> Path:
-        """Create a simple one-page PDF containing the QR code without exposing the raw URL."""
+        """Create a simple one-page PDF containing the QR code without exposing the raw URL.
+
+        A random UUID is used to make the filename unique per email so that
+        parallel or repeated sends do not overwrite each other's PDF files.
+        """
         temp_dir = Path(tempfile.gettempdir())
-        pdf_path = temp_dir / "qr_phishing.pdf"
+        unique_id = uuid.uuid4().hex
+        pdf_path = temp_dir / f"qr_phishing_{unique_id}.pdf"
 
         try:
             c = canvas.Canvas(str(pdf_path), pagesize=letter)
