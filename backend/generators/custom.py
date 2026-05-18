@@ -4,6 +4,8 @@ Creates emails with configurable subject, body, display name, optional attachmen
 and (optionally) a QR code generated from a user-specified URL, either inline in
 the email body or inside a PDF attachment, or both.
 """
+import html as html_module
+import re
 import tempfile
 import zipfile
 import uuid
@@ -152,6 +154,30 @@ startxref
             logger.error(f"Failed to create dummy attachment: {e}")
             raise
 
+    def _body_contains_html(self, body: str) -> bool:
+        """Return True if the body includes HTML markup (e.g. threat-risk links)."""
+        return bool(re.search(r"<[a-zA-Z][^>]*>", body))
+
+    def _wrap_html_body(self, body: str) -> str:
+        """Wrap body content in a minimal HTML document if not already wrapped."""
+        if re.search(r"<html\b", body, re.IGNORECASE):
+            return body
+        return f"<html>\n  <body>\n{body}\n  </body>\n</html>"
+
+    def _html_to_plain_text(self, body: str) -> str:
+        """Derive a plain-text alternative from HTML body content."""
+        text = body
+        text = re.sub(
+            r'<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>([^<]*)</a>',
+            r"\2 (\1)",
+            text,
+            flags=re.IGNORECASE,
+        )
+        text = re.sub(r"<br\s*/?>", "\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"</?p[^>]*>", "\n", text, flags=re.IGNORECASE)
+        text = re.sub(r"<[^>]+>", "", text)
+        return "\n".join(line.strip() for line in text.splitlines() if line.strip())
+
     def _normalise_qr_mode(self, qr_mode: str) -> str:
         """Normalise QR mode for custom emails."""
         mode = (qr_mode or "none").lower()
@@ -179,10 +205,14 @@ startxref
         Wrap the plain-text body into a simple HTML layout and include the QR
         image (referenced by CID) without exposing the raw URL.
         """
-        escaped_body = body.replace("\n", "<br>")
+        if self._body_contains_html(body):
+            body_block = body
+        else:
+            escaped_body = html_module.escape(body).replace("\n", "<br>")
+            body_block = f"<p>{escaped_body}</p>"
         return f"""<html>
   <body>
-    <p>{escaped_body}</p>
+    {body_block}
     <hr>
     <p>A QR code has been generated for this email.</p>
     <p>Scan the QR code below (in a controlled test environment only).</p>
@@ -298,6 +328,10 @@ startxref
                 attachment_file = self.create_dummy_attachment(attachment_type)
                 email_data["attachments"] = [str(attachment_file)]
 
+            if self._body_contains_html(body) and not use_qr:
+                email_data["html_body"] = self._wrap_html_body(body)
+                email_data["body"] = self._html_to_plain_text(body)
+
             # Optionally add QR-generated content from a user-provided URL
             if use_qr:
                 try:
@@ -306,6 +340,8 @@ startxref
                     if mode in ("body", "both"):
                         cid = f"custom-qr-{i}"
                         email_data["html_body"] = self._build_qr_html_body(body, cid)
+                        if self._body_contains_html(body):
+                            email_data["body"] = self._html_to_plain_text(body)
                         email_data["inline_images"] = [
                             {
                                 "cid": cid,

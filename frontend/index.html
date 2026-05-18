@@ -143,6 +143,49 @@
                     <textarea id="customBody" required rows="6" placeholder="Enter email body text"></textarea>
                 </div>
                 <div class="form-group">
+                    <label for="customThreatRiskLevel">Threat risk test URL (optional):</label>
+                    <select id="customThreatRiskLevel" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">-- Select risk level to add URL --</option>
+                        <option value="1">1 - Very Safe</option>
+                        <option value="2">2 - Safe</option>
+                        <option value="3">3 - Probably Safe</option>
+                        <option value="4">4 - Leans Safe</option>
+                        <option value="5">5 - May Not Be Safe</option>
+                        <option value="6">6 - Exercise Caution</option>
+                        <option value="7">7 - Suspicious/Risky</option>
+                        <option value="8">8 - Possibly Malicious</option>
+                        <option value="9">9 - Probably Malicious</option>
+                        <option value="10">10 - Malicious</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Adds a Symantec WebFilter threat risk test link (HTML) to the email body.
+                        <a href="https://sitereview.bluecoat.com/#/threat-risk-test-pages" target="_blank" rel="noopener noreferrer">Test pages reference</a>
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label for="customCategoryUrl">Category test URL (optional):</label>
+                    <select id="customCategoryUrl" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="">-- Select category to add URL --</option>
+                        <option value="news">News</option>
+                        <option value="social-media">Social Media</option>
+                        <option value="technology-internet">Technology/Internet</option>
+                        <option value="software-downloads">Software Downloads</option>
+                        <option value="scam">Scam</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Adds a category test link (HTML) to the email body.
+                    </small>
+                </div>
+                <div class="form-group">
+                    <label>Custom URL (optional):</label>
+                    <input type="text" id="customLinkUrl" placeholder="example.com or https://example.com" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                    <input type="text" id="customLinkDisplayText" placeholder="Link display text" style="margin-top: 8px; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;">
+                    <button type="button" class="btn btn-secondary" id="addCustomLinkBtn" style="margin-top: 8px;">Add custom URL to body</button>
+                    <small style="color: #666; display: block; margin-top: 5px;">
+                        Enter a URL and display text. <code>https://</code> is added automatically if omitted.
+                    </small>
+                </div>
+                <div class="form-group">
                     <label for="customDisplayName">Sender Display Name (optional):</label>
                     <input type="text" id="customDisplayName" placeholder="e.g., John Doe">
                     <small style="color: #666; display: block; margin-top: 5px;">How the sender name will appear to recipients</small>
@@ -314,6 +357,9 @@
     </div>
 
     <script src="/js/api.js"></script>
+    <script src="/js/threat-risk-urls.js"></script>
+    <script src="/js/category-urls.js"></script>
+    <script src="/js/custom-url.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>

@@ -119,6 +119,18 @@ function setupEmailSendModal() {
       await sendCustomEmail();
     });
 
+  document
+    .getElementById('customThreatRiskLevel')
+    ?.addEventListener('change', addThreatRiskUrlToCustomBody);
+
+  document
+    .getElementById('customCategoryUrl')
+    ?.addEventListener('change', addCategoryUrlToCustomBody);
+
+  document
+    .getElementById('addCustomLinkBtn')
+    ?.addEventListener('click', addCustomUrlToCustomBody);
+
   // QR phishing modal handlers
   document
     .getElementById('qrPhishingModalClose')
@@ -593,6 +605,78 @@ Method: ${attempt.connection_method || 'N/A'}`;
   }
 }
 
+function appendHtmlLinkToCustomBody(linkHtml, select) {
+  const bodyInput = document.getElementById('customBody');
+  if (!bodyInput || !linkHtml) {
+    return;
+  }
+  const separator = bodyInput.value.trim() ? '\n' : '';
+  bodyInput.value = bodyInput.value + separator + linkHtml;
+  if (select) {
+    select.value = '';
+  }
+}
+
+function addThreatRiskUrlToCustomBody() {
+  const select = document.getElementById('customThreatRiskLevel');
+  if (!select) {
+    return;
+  }
+
+  const level = parseInt(select.value, 10);
+  if (!level || level < 1 || level > 10) {
+    return;
+  }
+
+  appendHtmlLinkToCustomBody(getThreatRiskLinkHtml(level), select);
+}
+
+function addCategoryUrlToCustomBody() {
+  const select = document.getElementById('customCategoryUrl');
+  if (!select || !select.value) {
+    return;
+  }
+
+  const linkHtml = getCategoryLinkHtml(select.value);
+  appendHtmlLinkToCustomBody(linkHtml, select);
+}
+
+function addCustomUrlToCustomBody() {
+  const urlInput = document.getElementById('customLinkUrl');
+  const displayTextInput = document.getElementById('customLinkDisplayText');
+  if (!urlInput || !displayTextInput) {
+    return;
+  }
+
+  const url = urlInput.value.trim();
+  const displayText = displayTextInput.value.trim();
+
+  if (!url) {
+    showAlert('Please enter a URL.', 'error');
+    return;
+  }
+
+  if (!displayText) {
+    showAlert('Please enter display text for the link.', 'error');
+    return;
+  }
+
+  if (!isAllowedCustomUrl(url)) {
+    showAlert('URL must use http:// or https://.', 'error');
+    return;
+  }
+
+  const linkHtml = getCustomUrlLinkHtml(url, displayText);
+  if (!linkHtml) {
+    showAlert('Could not build a valid link from the URL provided.', 'error');
+    return;
+  }
+
+  appendHtmlLinkToCustomBody(linkHtml);
+  urlInput.value = '';
+  displayTextInput.value = '';
+}
+
 function showCustomEmailModal() {
   const modal = document.getElementById('customEmailModal');
   const recipientsInput = document.getElementById('customRecipients');
@@ -608,6 +692,22 @@ function showCustomEmailModal() {
   document.getElementById('customDisplayName').value = '';
   document.getElementById('customAttachment').value = '';
   document.getElementById('customCount').value = '1';
+  const threatRiskSelect = document.getElementById('customThreatRiskLevel');
+  if (threatRiskSelect) {
+    threatRiskSelect.value = '';
+  }
+  const categoryUrlSelect = document.getElementById('customCategoryUrl');
+  if (categoryUrlSelect) {
+    categoryUrlSelect.value = '';
+  }
+  const customLinkUrl = document.getElementById('customLinkUrl');
+  const customLinkDisplayText = document.getElementById('customLinkDisplayText');
+  if (customLinkUrl) {
+    customLinkUrl.value = '';
+  }
+  if (customLinkDisplayText) {
+    customLinkDisplayText.value = '';
+  }
   const qrUrlInput = document.getElementById('customQrUrl');
   const qrModeSelect = document.getElementById('customQrMode');
   if (qrUrlInput) {

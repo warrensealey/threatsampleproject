@@ -1,6 +1,6 @@
 # Email Data Generation Project
 
-**Version 1.4.0**
+**Version 1.5.0**
 
 Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
@@ -101,7 +101,7 @@ Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions
    - **EICAR Test Emails**: Standard antivirus test files
    - **Cynic Test Emails**: Password-protected VBS archives
    - **GTUBE Spam Test**: Single-message spam detector test using the GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X`
-   - **Custom Email**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat), plus optional QR encoding of a user-specified URL into the email body and/or a PDF attachment (URL only present inside the QR code).
+   - **Custom Email**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat), plus optional QR encoding of a user-specified URL into the email body and/or a PDF attachment (URL only present inside the QR code). The Custom Email dialog can insert HTML links for Symantec WebFilter **threat risk levels (1–10)**, predefined **category test URLs**, or a **custom URL** with user-defined display text.
 3. Enter recipient addresses and count (for custom emails, fill in the form fields)
 4. Review connection details in the results modal
 
@@ -127,7 +127,7 @@ threatsampleproject/
 ├── frontend/         # Web frontend
 │   ├── *.html       # Pages
 │   ├── css/         # Stylesheets
-│   └── js/          # JavaScript
+│   └── js/          # JavaScript (api, app, threat-risk-urls, category-urls, custom-url)
 ├── data/            # Configuration (auto-created)
 ├── VERSION          # Version information
 ├── requirements.txt # Dependencies
@@ -145,13 +145,15 @@ threatsampleproject/
 
 ## Version
 
-Current version: **1.4.0**
+Current version: **1.5.0**
 
 ### What's new in 1.5.0
 
-- **Per-configuration password persistence**: Email client passwords are stored per configuration and encrypted at rest. When editing an existing configuration, leaving the password field blank preserves the stored password instead of clearing it; new configurations still require an initial password.
-- **Custom Email QR URL support**: The Custom Email flow can optionally encode a user-specified URL as a QR code embedded in the email body, a PDF attachment, or both.
-- **Safer QR content**: All QR-based emails (QR Phishing and Custom Email QR modes) now keep the underlying URLs only inside the QR code payload and do not print them in clear text in HTML, plain-text bodies, or PDFs.
+- **Custom Email test URLs**: Insert HTML links from dropdowns for Symantec WebFilter threat risk levels (1–10) and predefined category test URLs (News, Social Media, Technology/Internet, Software Downloads, Scam).
+- **Custom URL builder**: Add your own link with separate URL and display text fields; `https://` is added automatically when omitted; only `http://` and `https://` schemes are allowed.
+- **HTML email bodies**: Custom emails with embedded links are sent as multipart HTML with a plain-text alternative.
+- **Per-configuration password persistence**: Email client passwords are stored per configuration and encrypted at rest. When editing an existing configuration, leaving the password field blank preserves the stored password instead of clearing it.
+- **Custom Email QR URL support**: Optionally encode a user-specified URL as a QR code in the email body, a PDF attachment, or both (URL only inside the QR code, not in clear text).
 
 ### What's new in 1.4.0
 

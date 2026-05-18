@@ -1,6 +1,6 @@
 # Email Data Generation Project - Complete Plan
 
-**Version:** 1.4.0
+**Version:** 1.5.0
 **Repository:** `/Users/warrensealey/threatsampleproject/`
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
@@ -51,7 +51,7 @@ threatsampleproject/
 └── PROJECT_PLAN.md         # This file
 ```
 
-## Current Features (Version 1.4.0)
+## Current Features (Version 1.5.0)
 
 ### Email Types
 
@@ -60,7 +60,7 @@ threatsampleproject/
 - **Cynic Test Emails**: Password-protected VBS archives
 - **GTUBE Spam-Test Emails**: Single-message spam detector tests using canonical GTUBE string
 - **QR Phishing Emails**: Phishing emails where PhishTank URLs are encoded as QR codes in the email body and/or a PDF attachment
-- **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat)
+- **Custom Emails**: Fully configurable emails with custom subject, body, display name, optional attachments (.zip, .com, .scr, .pdf, .bat), and optional HTML test links (threat risk levels, category URLs, or user-defined URLs)
 
 ### Email Providers
 
@@ -290,7 +290,14 @@ docker-compose up
 
 ## Version History
 
-### Version 1.4.0 (Current)
+### Version 1.5.0 (Current)
+
+- **Custom Email test URLs**: Threat risk level dropdown (1–10), category test URL dropdown, and custom URL + display text fields with automatic `https://` prefixing.
+- **HTML multipart emails**: Custom bodies with HTML links include a plain-text alternative for mail clients.
+- **Custom Email QR URL**: Optional QR encoding of a user URL in body and/or PDF without clear-text URL exposure.
+- **Per-configuration password persistence**: Blank password on edit preserves stored encrypted password.
+
+### Version 1.4.0
 
 - **Scheduled Email Sending**: Implemented a complete scheduling system with an in-app background scheduler (daemon thread with file locking), REST API endpoints for CRUD operations, and a dashboard UI for creating and managing schedules. Supports one-off sends at a specific date/time, interval schedules (every N hours), and weekly recurring schedules (specific weekdays at a given time). Includes proper timezone handling (app-wide timezone setting), automatic failure detection (schedules auto-disable after 3 consecutive failures), and execution tracking (last run status, next run calculation). Schedules run automatically while the Docker container is up.
 

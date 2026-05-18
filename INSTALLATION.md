@@ -1,6 +1,6 @@
 # Installation Guide
 
-**Version 1.2.0**
+**Version 1.5.0**
 
 This guide provides step-by-step instructions for installing and setting up the Email Data Generation application.
 

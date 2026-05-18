@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Version 1.4.0**
+**Version 1.5.0**
 
 Comprehensive documentation for the Email Data Generation application.
 
@@ -364,6 +364,16 @@ Custom emails allow full control over email content and appearance for flexible 
   - Optional QR URL field in the Custom Email modal allows encoding a user-provided URL into a QR code.
   - QR modes (None / Body / PDF / Both) control whether the QR appears inline in the HTML body, in a generated PDF attachment, or both.
   - For safety, the underlying URL is only encoded inside the QR code and is not printed in clear text in the email body or PDF.
+- **Threat risk test URLs**:
+  - Dropdown for WebFilter threat risk levels 1–10 (Symantec test pages at `testrating.webfilter.bluecoat.com`).
+  - Inserts an HTML anchor with display text `URL of risk level N`.
+- **Category test URLs**:
+  - Dropdown for predefined category samples (News, Social Media, Technology/Internet, Software Downloads, Scam).
+  - Inserts an HTML anchor with display text `URL of category: {category}`.
+- **Custom URL**:
+  - User supplies URL and display text; `https://` is prepended when no scheme is given.
+  - Only `http://` and `https://` links are accepted.
+  - Bodies containing HTML links are sent as `multipart/alternative` with HTML and plain-text parts.
 
 ## Configuration
 
