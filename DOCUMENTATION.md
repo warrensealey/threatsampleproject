@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Version 1.6.0**
+**Version 1.6.1**
 
 Comprehensive documentation for the Email Data Generation application.
 

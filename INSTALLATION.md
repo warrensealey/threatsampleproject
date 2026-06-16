@@ -1,6 +1,6 @@
 # Installation Guide
 
-**Version 1.6.0**
+**Version 1.6.1**
 
 This guide provides step-by-step instructions for installing and setting up the Email Data Generation application.
 
@@ -21,6 +21,10 @@ Before installing the application, ensure you have the following:
 3. **Git** (for cloning the repository)
    - Check: `git --version`
    - Download from: https://git-scm.com/downloads
+
+### Windows Docker note
+
+The published Docker image is **Linux-based** (multi-arch for `linux/amd64` and `linux/arm64`). On Windows, use **Docker Desktop** with **Linux containers** (typically via WSL2); Windows container images are not published separately.
 
 ### Optional Software
 

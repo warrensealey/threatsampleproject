@@ -57,7 +57,7 @@ threatsampleproject/
 └── PROJECT_PLAN.md         # This file
 ```
 
-## Current Features (Version 1.6.0)
+## Current Features (Version 1.6.1)
 
 ### Email Types
 
@@ -298,7 +298,7 @@ docker-compose up
 
 ## Version History
 
-### Version 1.6.0 (Current)
+### Version 1.6.1 (Current)
 
 - **Newly Registered Domain (NRD) Emails**: One email per domain from the weekly NRD CSV list, cached locally with a 24-hour refresh window and a persistent sequential cursor (no reuse until the list refreshes). Email subjects include the domain under test.
 - **EML Delivery Mode**: Dashboard **Delivery mode** supports saving outbound messages as local `.eml` files (under `data/eml_exports/`) instead of sending via SMTP.

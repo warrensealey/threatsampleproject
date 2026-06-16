@@ -1,6 +1,6 @@
 # Email Data Generation Project
 
-**Version 1.6.0**
+**Version 1.6.1**
 
 Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
@@ -157,7 +157,12 @@ pytest tests/ -v
 
 ## Version
 
-Current version: **1.6.0**
+Current version: **1.6.1**
+
+### What's new in 1.6.1
+
+- **Multi-platform Linux Docker builds**: GHCR images now publish both `linux/amd64` and `linux/arm64` manifests, so the project pulls cleanly on Intel/AMD and Apple Silicon hosts.
+- **Windows guidance**: Windows users should run the image as a Linux container using Docker Desktop/WSL2 (Windows container images are not published separately).
 
 ### What's new in 1.6.0
 
