@@ -157,6 +157,26 @@ function setupEmailSendModal() {
       await submitQrPhishingFromModal();
     });
 
+  // NRD modal handlers
+  document.getElementById('nrdModalClose')?.addEventListener('click', () => {
+    document.getElementById('nrdModal').classList.add('hidden');
+  });
+
+  document.getElementById('cancelNrdBtn')?.addEventListener('click', () => {
+    document.getElementById('nrdModal').classList.add('hidden');
+  });
+
+  document.getElementById('nrdModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'nrdModal') {
+      document.getElementById('nrdModal').classList.add('hidden');
+    }
+  });
+
+  document.getElementById('nrdForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    await submitNrdFromModal();
+  });
+
   // Phishing warning modal handlers
   document
     .getElementById('phishingWarningConfirmBtn')
@@ -216,6 +236,10 @@ function setupSendButtons() {
 
   document.getElementById('sendCustomBtn')?.addEventListener('click', () => {
     showCustomEmailModal();
+  });
+
+  document.getElementById('sendNrdBtn')?.addEventListener('click', () => {
+    showNrdDialog();
   });
 }
 
@@ -285,6 +309,8 @@ async function submitQrPhishingFromModal() {
 }
 
 async function sendQrPhishingEmails(count, recipients, qrMode) {
+  const deliveryMode = getSelectedDeliveryMode();
+
   const statusDiv = document.getElementById('sendStatus');
   const modal = document.getElementById('emailSendModal');
   const modalTitle = document.getElementById('emailSendModalTitle');
@@ -301,7 +327,9 @@ async function sendQrPhishingEmails(count, recipients, qrMode) {
 
   // Show status in dashboard
   statusDiv.innerHTML =
-    '<div class="alert alert-info">Sending QR phishing emails...</div>';
+    deliveryMode === 'eml'
+      ? '<div class="alert alert-info">Saving QR phishing emails as .eml files...</div>'
+      : '<div class="alert alert-info">Sending QR phishing emails...</div>';
   statusDiv.classList.remove('hidden');
 
   // Show modal
@@ -311,13 +339,22 @@ async function sendQrPhishingEmails(count, recipients, qrMode) {
   modalActions.classList.add('hidden');
 
   try {
-    const result = await api.sendQrPhishing(count, recipients, qrMode);
+    const result = await api.sendQrPhishing(
+      count,
+      recipients,
+      qrMode,
+      deliveryMode
+    );
 
     // Build connection details text
     let connectionText = '';
     if (result.connection_info) {
       const connInfo = result.connection_info;
-      connectionText = `IMAP Connection:
+      connectionText = `Delivery Mode: ${
+        result.connection_info.delivery_mode === 'eml' ? 'Save as .eml' : 'SMTP send'
+      }
+
+IMAP Connection:
 Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
 Username: ${connInfo.username || 'N/A'}
 Encryption: ${
@@ -355,11 +392,19 @@ Method: ${attempt.connection_method || 'N/A'}`;
 
     if (result.success) {
       statusDiv.innerHTML = `<div class="alert alert-success">
-                Successfully sent ${result.sent} QR phishing email(s)!
+                ${
+                  deliveryMode === 'eml'
+                    ? `Successfully saved ${result.sent} QR phishing email(s) as .eml!`
+                    : `Successfully sent ${result.sent} QR phishing email(s)!`
+                }
             </div>`;
 
       modalStatus.innerHTML = `<div class="alert alert-success">
-                <strong>Success!</strong> Successfully sent ${result.sent} QR phishing email(s)!
+                <strong>Success!</strong> ${
+                  deliveryMode === 'eml'
+                    ? `Successfully saved ${result.sent} QR phishing email(s) as .eml!`
+                    : `Successfully sent ${result.sent} QR phishing email(s)!`
+                }
             </div>`;
 
       if (connectionText) {
@@ -415,6 +460,140 @@ Method: ${attempt.connection_method || 'N/A'}`;
   }
 }
 
+function showNrdDialog() {
+  const modal = document.getElementById('nrdModal');
+  const countInput = document.getElementById('nrdCountInput');
+  const recipientsInput = document.getElementById('nrdRecipientsInput');
+
+  if (!modal || !countInput || !recipientsInput) {
+    return;
+  }
+
+  countInput.value = '1';
+  if (defaultRecipients.length > 0) {
+    recipientsInput.value = defaultRecipients.join(', ');
+  } else {
+    recipientsInput.value = '';
+  }
+
+  modal.classList.remove('hidden');
+}
+
+async function submitNrdFromModal() {
+  const modal = document.getElementById('nrdModal');
+  const countInput = document.getElementById('nrdCountInput');
+  const recipientsInput = document.getElementById('nrdRecipientsInput');
+
+  if (!modal || !countInput || !recipientsInput) {
+    return;
+  }
+
+  const parsedCount = parseInt(countInput.value, 10) || 0;
+  if (parsedCount < 1 || parsedCount > 10) {
+    alert('Count must be between 1 and 10.');
+    return;
+  }
+
+  const recipientsStr = recipientsInput.value.trim();
+  if (!recipientsStr) {
+    alert('Recipients are required.');
+    return;
+  }
+
+  const recipientList = recipientsStr
+    .split(',')
+    .map((r) => r.trim())
+    .filter((r) => r);
+
+  if (recipientList.length === 0) {
+    alert('No valid recipient addresses provided');
+    return;
+  }
+
+  modal.classList.add('hidden');
+  await sendNrdEmails(parsedCount, recipientList);
+}
+
+async function sendNrdEmails(count, recipients) {
+  const deliveryMode = getSelectedDeliveryMode();
+
+  const statusDiv = document.getElementById('sendStatus');
+  const modal = document.getElementById('emailSendModal');
+  const modalTitle = document.getElementById('emailSendModalTitle');
+  const modalStatus = document.getElementById('emailSendStatus');
+  const modalConnectionInfo = document.getElementById(
+    'emailSendConnectionInfo'
+  );
+  const modalConnectionDetails = document.getElementById(
+    'emailSendConnectionDetails'
+  );
+  const modalActions = document.getElementById('emailSendActions');
+
+  modalTitle.textContent = 'NRD Email Send Results';
+
+  statusDiv.innerHTML =
+    deliveryMode === 'eml'
+      ? '<div class="alert alert-info">Saving NRD emails as .eml files...</div>'
+      : '<div class="alert alert-info">Sending NRD emails...</div>';
+  statusDiv.classList.remove('hidden');
+
+  modal.classList.remove('hidden');
+  modalStatus.innerHTML = '<p class="loading">Sending emails...</p>';
+  modalConnectionInfo.classList.add('hidden');
+  modalActions.classList.add('hidden');
+
+  try {
+    const result = await api.sendNrd(count, recipients, deliveryMode);
+
+    let detailsText = '';
+    if (result.urls && result.urls.length > 0) {
+      detailsText = `Domains used:\n${(result.domains || []).join('\n')}\n\nURLs:\n${result.urls.join('\n')}`;
+      if (typeof result.nrd_remaining === 'number') {
+        detailsText += `\n\nRemaining in cache: ${result.nrd_remaining}`;
+      }
+    }
+
+    if (result.success) {
+      const action =
+        deliveryMode === 'eml' ? 'saved' : 'sent';
+      statusDiv.innerHTML = `<div class="alert alert-success">
+                Successfully ${action} ${result.sent} NRD email(s)!
+            </div>`;
+
+      modalStatus.innerHTML = `<div class="alert alert-success">
+                <strong>Success!</strong> Successfully ${action} ${result.sent} NRD email(s)!
+            </div>`;
+
+      if (detailsText) {
+        modalConnectionDetails.innerHTML = `
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6;">${detailsText}</pre>
+                `;
+        modalConnectionInfo.classList.remove('hidden');
+      }
+
+      modalActions.classList.remove('hidden');
+      await loadHistory();
+    } else {
+      const errorMsg = result.error || 'Failed to send NRD emails';
+      statusDiv.innerHTML = `<div class="alert alert-error">${errorMsg}</div>`;
+      modalStatus.innerHTML = `<div class="alert alert-error"><strong>Error:</strong> ${errorMsg}</div>`;
+
+      if (detailsText) {
+        modalConnectionDetails.innerHTML = `
+                    <pre style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; word-wrap: break-word; font-size: 13px; line-height: 1.6;">${detailsText}</pre>
+                `;
+        modalConnectionInfo.classList.remove('hidden');
+      }
+
+      modalActions.classList.remove('hidden');
+    }
+  } catch (error) {
+    statusDiv.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+    modalStatus.innerHTML = `<div class="alert alert-error"><strong>Error:</strong> ${error.message}</div>`;
+    modalActions.classList.remove('hidden');
+  }
+}
+
 function showPhishingWarning() {
   const modal = document.getElementById('phishingWarningModal');
   if (modal) {
@@ -452,7 +631,15 @@ function showSendDialog(type) {
   sendEmails(type, parsedCount, recipientList);
 }
 
+function getSelectedDeliveryMode() {
+  const select = document.getElementById('sendDeliveryMode');
+  const value = (select?.value || 'smtp').toLowerCase();
+  return value === 'eml' ? 'eml' : 'smtp';
+}
+
 async function sendEmails(type, count, recipients) {
+  const deliveryMode = getSelectedDeliveryMode();
+
   const statusDiv = document.getElementById('sendStatus');
   const modal = document.getElementById('emailSendModal');
   const modalTitle = document.getElementById('emailSendModalTitle');
@@ -477,7 +664,10 @@ async function sendEmails(type, count, recipients) {
   } Email Send Results`;
 
   // Show status in dashboard
-  statusDiv.innerHTML = '<div class="alert alert-info">Sending emails...</div>';
+  statusDiv.innerHTML =
+    deliveryMode === 'eml'
+      ? '<div class="alert alert-info">Saving emails as .eml files...</div>'
+      : '<div class="alert alert-info">Sending emails...</div>';
   statusDiv.classList.remove('hidden');
 
   // Show modal
@@ -489,13 +679,13 @@ async function sendEmails(type, count, recipients) {
   try {
     let result;
     if (type === 'phishing') {
-      result = await api.sendPhishing(count, recipients);
+      result = await api.sendPhishing(count, recipients, 'warning', deliveryMode);
     } else if (type === 'eicar') {
-      result = await api.sendEicar(count, recipients);
+      result = await api.sendEicar(count, recipients, deliveryMode);
     } else if (type === 'cynic') {
-      result = await api.sendCynic(count, recipients);
+      result = await api.sendCynic(count, recipients, deliveryMode);
     } else if (type === 'gtube') {
-      result = await api.sendGtube(count, recipients);
+      result = await api.sendGtube(count, recipients, deliveryMode);
     } else {
       throw new Error(`Unsupported email type: ${type}`);
     }
@@ -504,7 +694,11 @@ async function sendEmails(type, count, recipients) {
     let connectionText = '';
     if (result.connection_info) {
       const connInfo = result.connection_info;
-      connectionText = `IMAP Connection:
+      connectionText = `Delivery Mode: ${
+        result.connection_info.delivery_mode === 'eml' ? 'Save as .eml' : 'SMTP send'
+      }
+
+IMAP Connection:
 Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
 Username: ${connInfo.username || 'N/A'}
 Encryption: ${
@@ -544,11 +738,19 @@ Method: ${attempt.connection_method || 'N/A'}`;
     if (result.success) {
       // Success
       statusDiv.innerHTML = `<div class="alert alert-success">
-                Successfully sent ${result.sent} email(s)!
+                ${
+                  deliveryMode === 'eml'
+                    ? `Successfully saved ${result.sent} email(s) as .eml!`
+                    : `Successfully sent ${result.sent} email(s)!`
+                }
             </div>`;
 
       modalStatus.innerHTML = `<div class="alert alert-success">
-                <strong>Success!</strong> Successfully sent ${result.sent} email(s)!
+                <strong>Success!</strong> ${
+                  deliveryMode === 'eml'
+                    ? `Successfully saved ${result.sent} email(s) as .eml!`
+                    : `Successfully sent ${result.sent} email(s)!`
+                }
             </div>`;
 
       if (connectionText) {
@@ -721,6 +923,8 @@ function showCustomEmailModal() {
 }
 
 async function sendCustomEmail() {
+  const deliveryMode = getSelectedDeliveryMode();
+
   const subject = document.getElementById('customSubject').value.trim();
   const body = document.getElementById('customBody').value.trim();
   const displayName = document.getElementById('customDisplayName').value.trim();
@@ -795,7 +999,9 @@ async function sendCustomEmail() {
 
   // Show status in dashboard
   statusDiv.innerHTML =
-    '<div class="alert alert-info">Sending custom email...</div>';
+    deliveryMode === 'eml'
+      ? '<div class="alert alert-info">Saving custom email as .eml...</div>'
+      : '<div class="alert alert-info">Sending custom email...</div>';
   statusDiv.classList.remove('hidden');
 
   // Show modal
@@ -813,14 +1019,19 @@ async function sendCustomEmail() {
       displayName || null,
       attachmentType || null,
       qrUrl || null,
-      qrMode || 'none'
+      qrMode || 'none',
+      deliveryMode
     );
 
     // Build connection details text
     let connectionText = '';
     if (result.connection_info) {
       const connInfo = result.connection_info;
-      connectionText = `IMAP Connection:
+      connectionText = `Delivery Mode: ${
+        result.connection_info.delivery_mode === 'eml' ? 'Save as .eml' : 'SMTP send'
+      }
+
+IMAP Connection:
 Server: ${connInfo.imap_server || 'N/A'}:${connInfo.imap_port || 993}
 Username: ${connInfo.username || 'N/A'}
 Encryption: ${
@@ -865,11 +1076,19 @@ Method: ${attempt.connection_method || 'N/A'}`;
     if (result.success) {
       // Success
       statusDiv.innerHTML = `<div class="alert alert-success">
-                Successfully sent ${result.sent} email(s)!
+                ${
+                  deliveryMode === 'eml'
+                    ? `Successfully saved ${result.sent} email(s) as .eml!`
+                    : `Successfully sent ${result.sent} email(s)!`
+                }
             </div>`;
 
       modalStatus.innerHTML = `<div class="alert alert-success">
-                <strong>Success!</strong> Successfully sent ${result.sent} email(s)!
+                <strong>Success!</strong> ${
+                  deliveryMode === 'eml'
+                    ? `Successfully saved ${result.sent} email(s) as .eml!`
+                    : `Successfully sent ${result.sent} email(s)!`
+                }
             </div>`;
 
       if (connectionText) {

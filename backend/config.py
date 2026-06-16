@@ -33,7 +33,12 @@ DEFAULT_CONFIG: Dict[str, Any] = {
             "cynic": "This is a important top secret email!",
             "gtube": "GTUBE Spam Test Email",
             "qr_phishing": "QR Phishing Test Email",
+            "nrd": "Newly Registered Domain Test",
         },
+    },
+    "nrd": {
+        "last_download_utc": None,
+        "next_index": 0,
     },
     # Named email templates grouped by type, e.g.:
     # "templates": {

@@ -1,6 +1,6 @@
 # Installation Guide
 
-**Version 1.5.0**
+**Version 1.6.0**
 
 This guide provides step-by-step instructions for installing and setting up the Email Data Generation application.
 
@@ -315,6 +315,22 @@ If you encounter SSL/TLS errors when sending emails:
 2. Check that the correct port is used (587 for TLS, 465 for SSL)
 3. Ensure "Use TLS" or "Use SSL" is correctly configured
 4. Some providers require app-specific passwords instead of regular passwords
+
+## Testing (Optional)
+
+The project includes an automated pytest suite for non-network logic like the NRD cache/cursor and API validation.
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+## Delivery Mode and NRD Notes
+
+- The dashboard **Delivery mode** dropdown supports:
+  - `smtp`: send via the configured hosted mail provider
+  - `eml`: save outbound messages locally as `.eml` files under `data/eml_exports/`
+- NRD emails use a cached weekly CSV (`data/nrd-1w.csv`) that is re-downloaded at most once per 24 hours. Domains are consumed sequentially and not reused until the list refreshes.
 
 ## Production Deployment
 

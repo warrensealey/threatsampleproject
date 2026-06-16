@@ -1,6 +1,6 @@
 # Email Data Generation Project
 
-**Version 1.5.0**
+**Version 1.6.0**
 
 Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
@@ -102,8 +102,10 @@ Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions
    - **Cynic Test Emails**: Password-protected VBS archives
    - **GTUBE Spam Test**: Single-message spam detector test using the GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X`
    - **Custom Email**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat), plus optional QR encoding of a user-specified URL into the email body and/or a PDF attachment (URL only present inside the QR code). The Custom Email dialog can insert HTML links for Symantec WebFilter **threat risk levels (1–10)**, predefined **category test URLs**, or a **custom URL** with user-defined display text.
-3. Enter recipient addresses and count (for custom emails, fill in the form fields)
-4. Review connection details in the results modal
+   - **Newly Registered Domain (NRD) Emails**: One email per domain from the weekly [newly registered domains](https://github.com/shreshta-labs/newly-registered-domains) list; each body contains `https://www.{domain}`. The list is downloaded at most once per 24 hours and cached locally; domains are consumed sequentially without reuse until the list is refreshed.
+3. Choose **Delivery mode** (SMTP or save as local `.eml` files) — applies to all send types on the dashboard.
+4. Enter recipient addresses and count (for NRD, count is 1–10; for custom emails, fill in the form fields)
+5. Review connection details in the results modal
 
 ### Configuration
 
@@ -131,6 +133,9 @@ threatsampleproject/
 ├── data/            # Configuration (auto-created)
 ├── VERSION          # Version information
 ├── requirements.txt # Dependencies
+├── requirements-dev.txt # Dev/test dependencies (pytest)
+├── tests/           # Automated tests
+├── pytest.ini       # Pytest configuration
 ├── start.sh         # Startup script
 ├── README.md        # Project overview
 ├── INSTALLATION.md  # Installation guide
@@ -143,9 +148,22 @@ threatsampleproject/
 - Flask 3.0.0
 - 7z command-line tool (optional, for Cynic emails)
 
+## Testing
+
+```bash
+pip install -r requirements.txt -r requirements-dev.txt
+pytest tests/ -v
+```
+
 ## Version
 
-Current version: **1.5.0**
+Current version: **1.6.0**
+
+### What's new in 1.6.0
+
+- **Newly Registered Domain (NRD) emails**: Send test emails with URLs from the weekly newly registered domain list (`https://www.{domain}` per email). The CSV is cached at `data/nrd-1w.csv` and re-downloaded at most once every 24 hours; a sequential cursor in `config.json` ensures domains are not reused until the list refreshes. Email subjects include the domain under test (e.g., `Newly Registered Domain Test - {domain}`).
+- **EML delivery mode**: Save any dashboard send type as local `.eml` files under `data/eml_exports/` instead of sending via SMTP.
+- **Automated tests**: Pytest suite for NRD cache, generator, and API logic (`pytest tests/ -v`).
 
 ### What's new in 1.5.0
 

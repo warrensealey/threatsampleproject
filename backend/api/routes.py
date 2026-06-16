@@ -36,6 +36,17 @@ logger = logging.getLogger(__name__)
 api = Blueprint("api", __name__)
 email_generator = EmailGenerator()
 
+def _parse_delivery_mode(data):
+    """Parse and validate delivery_mode from request payload."""
+    data = data or {}
+    delivery_mode = (data.get("delivery_mode") or "smtp").lower()
+    if delivery_mode not in ("smtp", "eml"):
+        return None, (
+            jsonify({"error": "Invalid delivery_mode. Must be one of: smtp, eml"}),
+            400,
+        )
+    return delivery_mode, None
+
 
 @api.route("/config", methods=["GET"])
 def get_config():
@@ -278,11 +289,16 @@ def send_phishing():
         count = data.get('count', 1)
         recipients = data.get('recipients', [])
         template_type = data.get('template_type', 'warning')
+        delivery_mode, error_response = _parse_delivery_mode(data)
+        if error_response:
+            return error_response
 
         if not recipients:
             return jsonify({"error": "No recipients specified"}), 400
 
-        result = email_generator.send_phishing_emails(count, recipients, template_type)
+        result = email_generator.send_phishing_emails(
+            count, recipients, template_type, delivery_mode=delivery_mode
+        )
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error sending phishing emails: {e}")
@@ -298,6 +314,9 @@ def send_qr_phishing():
         recipients = data.get("recipients", [])
         qr_mode = data.get("qr_mode", "body")
         template_type = data.get("template_type", "warning")
+        delivery_mode, error_response = _parse_delivery_mode(data)
+        if error_response:
+            return error_response
 
         if not recipients:
             return jsonify({"error": "No recipients specified"}), 400
@@ -307,6 +326,7 @@ def send_qr_phishing():
             recipients=recipients,
             qr_mode=qr_mode,
             template_type=template_type,
+            delivery_mode=delivery_mode,
         )
         return jsonify(result)
     except Exception as e:
@@ -321,11 +341,16 @@ def send_eicar():
         data = request.json
         count = data.get('count', 1)
         recipients = data.get('recipients', [])
+        delivery_mode, error_response = _parse_delivery_mode(data)
+        if error_response:
+            return error_response
 
         if not recipients:
             return jsonify({"error": "No recipients specified"}), 400
 
-        result = email_generator.send_eicar_emails(count, recipients)
+        result = email_generator.send_eicar_emails(
+            count, recipients, delivery_mode=delivery_mode
+        )
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error sending EICAR emails: {e}")
@@ -339,11 +364,16 @@ def send_cynic():
         data = request.json
         count = data.get('count', 1)
         recipients = data.get('recipients', [])
+        delivery_mode, error_response = _parse_delivery_mode(data)
+        if error_response:
+            return error_response
 
         if not recipients:
             return jsonify({"error": "No recipients specified"}), 400
 
-        result = email_generator.send_cynic_emails(count, recipients)
+        result = email_generator.send_cynic_emails(
+            count, recipients, delivery_mode=delivery_mode
+        )
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error sending Cynic emails: {e}")
@@ -357,14 +387,50 @@ def send_gtube():
         data = request.json
         count = data.get('count', 1)
         recipients = data.get('recipients', [])
+        delivery_mode, error_response = _parse_delivery_mode(data)
+        if error_response:
+            return error_response
 
         if not recipients:
             return jsonify({"error": "No recipients specified"}), 400
 
-        result = email_generator.send_gtube_emails(count, recipients)
+        result = email_generator.send_gtube_emails(
+            count, recipients, delivery_mode=delivery_mode
+        )
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error sending GTUBE emails: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@api.route("/send/nrd", methods=["POST"])
+def send_nrd():
+    """Send newly registered domain (NRD) test emails."""
+    try:
+        data = request.json or {}
+        recipients = data.get("recipients", [])
+        delivery_mode, error_response = _parse_delivery_mode(data)
+        if error_response:
+            return error_response
+
+        if not recipients:
+            return jsonify({"error": "No recipients specified"}), 400
+
+        try:
+            count = int(data.get("count", 1))
+        except (TypeError, ValueError):
+            return jsonify({"error": "count must be an integer between 1 and 10"}), 400
+
+        if count < 1 or count > 10:
+            return jsonify({"error": "count must be between 1 and 10"}), 400
+
+        result = email_generator.send_nrd_emails(
+            count, recipients, delivery_mode=delivery_mode
+        )
+        status_code = 200 if result.get("success") or result.get("sent", 0) > 0 else 400
+        return jsonify(result), status_code
+    except Exception as e:
+        logger.error(f"Error sending NRD emails: {e}")
         return jsonify({"error": str(e)}), 500
 
 
@@ -381,6 +447,9 @@ def send_custom():
         attachment_type = data.get("attachment_type")
         qr_url = data.get("qr_url")
         qr_mode = (data.get("qr_mode") or "none").lower()
+        delivery_mode, error_response = _parse_delivery_mode(data)
+        if error_response:
+            return error_response
 
         if not recipients:
             return jsonify({"error": "No recipients specified"}), 400
@@ -439,6 +508,7 @@ def send_custom():
             attachment_type=attachment_type,
             qr_url=qr_url,
             qr_mode=qr_mode,
+            delivery_mode=delivery_mode,
         )
         return jsonify(result)
     except Exception as e:

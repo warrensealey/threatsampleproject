@@ -3,6 +3,7 @@ Email generator coordinator.
 Orchestrates the generation and sending of different types of test emails.
 """
 import logging
+from pathlib import Path
 from backend.smtp_client import SMTPClient
 from backend.generators.phishing import PhishingGenerator
 from backend.generators.eicar import EICARGenerator
@@ -10,6 +11,14 @@ from backend.generators.cynic import CynicGenerator
 from backend.generators.gtube import GTUBEGenerator
 from backend.generators.custom import CustomEmailGenerator
 from backend.generators.qr_phishing import QRPhishingGenerator
+from backend.generators.nrd import NRDGenerator
+from backend.nrd_cache import (
+    InsufficientDomainsError,
+    NRDDownloadError,
+    advance_nrd_cursor,
+    get_nrd_state,
+    remaining_domain_count,
+)
 from backend.config import add_history_entry, get_smtp_config
 
 logger = logging.getLogger(__name__)
@@ -26,8 +35,9 @@ class EmailGenerator:
         self.custom_gen = CustomEmailGenerator()
         self.gtube_gen = GTUBEGenerator()
         self.qr_phishing_gen = QRPhishingGenerator()
+        self.nrd_gen = NRDGenerator()
     
-    def send_phishing_emails(self, count=1, recipients=None, template_type="warning"):
+    def send_phishing_emails(self, count=1, recipients=None, template_type="warning", delivery_mode="smtp"):
         """
         Generate and send phishing emails.
         
@@ -41,13 +51,13 @@ class EmailGenerator:
         """
         try:
             emails = self.phishing_gen.generate_emails(count, recipients, template_type)
-            results = self._send_emails(emails, "phishing")
+            results = self._send_emails(emails, "phishing", delivery_mode=delivery_mode)
             return results
         except Exception as e:
             logger.error(f"Failed to send phishing emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
     
-    def send_eicar_emails(self, count=1, recipients=None):
+    def send_eicar_emails(self, count=1, recipients=None, delivery_mode="smtp"):
         """
         Generate and send EICAR test emails.
         
@@ -60,13 +70,13 @@ class EmailGenerator:
         """
         try:
             emails = self.eicar_gen.generate_emails(count, recipients)
-            results = self._send_emails(emails, "eicar")
+            results = self._send_emails(emails, "eicar", delivery_mode=delivery_mode)
             return results
         except Exception as e:
             logger.error(f"Failed to send EICAR emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
     
-    def send_cynic_emails(self, count=1, recipients=None):
+    def send_cynic_emails(self, count=1, recipients=None, delivery_mode="smtp"):
         """
         Generate and send Cynic test emails.
         
@@ -79,13 +89,13 @@ class EmailGenerator:
         """
         try:
             emails = self.cynic_gen.generate_emails(count, recipients)
-            results = self._send_emails(emails, "cynic")
+            results = self._send_emails(emails, "cynic", delivery_mode=delivery_mode)
             return results
         except Exception as e:
             logger.error(f"Failed to send Cynic emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
 
-    def send_qr_phishing_emails(self, count=1, recipients=None, qr_mode="body", template_type="warning"):
+    def send_qr_phishing_emails(self, count=1, recipients=None, qr_mode="body", template_type="warning", delivery_mode="smtp"):
         """
         Generate and send QR-based phishing emails.
 
@@ -105,13 +115,13 @@ class EmailGenerator:
                 qr_mode=qr_mode,
                 template_type=template_type,
             )
-            results = self._send_emails(emails, "qr_phishing")
+            results = self._send_emails(emails, "qr_phishing", delivery_mode=delivery_mode)
             return results
         except Exception as e:
             logger.error(f"Failed to send QR phishing emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
 
-    def send_gtube_emails(self, count=1, recipients=None):
+    def send_gtube_emails(self, count=1, recipients=None, delivery_mode="smtp"):
         """
         Generate and send GTUBE spam-test emails.
 
@@ -124,12 +134,51 @@ class EmailGenerator:
         """
         try:
             emails = self.gtube_gen.generate_emails(count, recipients)
-            results = self._send_emails(emails, "gtube")
+            results = self._send_emails(emails, "gtube", delivery_mode=delivery_mode)
             return results
         except Exception as e:
             logger.error(f"Failed to send GTUBE emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
     
+    def send_nrd_emails(self, count=1, recipients=None, delivery_mode="smtp"):
+        """
+        Generate and send newly registered domain (NRD) test emails.
+
+        Args:
+            count: Number of emails to send (1-10)
+            recipients: List of recipient email addresses
+            delivery_mode: 'smtp' or 'eml'
+
+        Returns:
+            Dictionary with results
+        """
+        try:
+            emails = self.nrd_gen.generate_emails(count, recipients)
+            results = self._send_emails(emails, "nrd", delivery_mode=delivery_mode)
+            sent_count = results.get("sent", 0)
+            if sent_count > 0:
+                advance_nrd_cursor(sent_count)
+                results["domains"] = [e.get("domain") for e in emails[:sent_count]]
+                results["urls"] = [e.get("url") for e in emails[:sent_count]]
+                state = get_nrd_state()
+                results["nrd_cursor"] = state["next_index"]
+                results["nrd_remaining"] = remaining_domain_count()
+            return results
+        except InsufficientDomainsError as e:
+            logger.error("Insufficient NRD domains: %s", e)
+            return {
+                "success": False,
+                "error": str(e),
+                "sent": 0,
+                "remaining": e.remaining,
+            }
+        except NRDDownloadError as e:
+            logger.error("NRD download failed: %s", e)
+            return {"success": False, "error": str(e), "sent": 0}
+        except Exception as e:
+            logger.error(f"Failed to send NRD emails: {e}")
+            return {"success": False, "error": str(e), "sent": 0}
+
     def send_custom_emails(
         self,
         count=1,
@@ -140,6 +189,7 @@ class EmailGenerator:
         attachment_type=None,
         qr_url=None,
         qr_mode="none",
+        delivery_mode="smtp",
     ):
         """
         Generate and send custom emails with configurable fields.
@@ -168,13 +218,13 @@ class EmailGenerator:
                 qr_url=qr_url,
                 qr_mode=qr_mode,
             )
-            results = self._send_emails(emails, "custom")
+            results = self._send_emails(emails, "custom", delivery_mode=delivery_mode)
             return results
         except Exception as e:
             logger.error(f"Failed to send custom emails: {e}")
             return {"success": False, "error": str(e), "sent": 0}
     
-    def _send_emails(self, emails, email_type):
+    def _send_emails(self, emails, email_type, delivery_mode="smtp"):
         """
         Send emails using SMTP client.
         
@@ -229,8 +279,13 @@ class EmailGenerator:
                 smtp_config["server"] = "smtp.zoho.com"
                 smtp_config["port"] = 587
         
+        normalized_delivery_mode = (delivery_mode or "smtp").lower()
+        if normalized_delivery_mode not in ("smtp", "eml"):
+            normalized_delivery_mode = "smtp"
+
         # Build connection info and connection attempt details
         connection_info = {
+            "delivery_mode": normalized_delivery_mode,
             "smtp_server": smtp_config["server"],
             "smtp_port": smtp_config["port"],
             "username": smtp_config["username"],
@@ -253,9 +308,78 @@ class EmailGenerator:
         failed_count = 0
         errors = []
         connection_error = None
+        saved_files = []
+        eml_output_dir = str((Path(__file__).resolve().parent.parent / "data" / "eml_exports"))
         # For Cynic emails, track MD5 checksums of the underlying VBS scripts
         cynic_vbs_md5_list = [] if email_type == "cynic" else None
-        
+
+        if normalized_delivery_mode == "eml":
+            try:
+                local_client = SMTPClient(smtp_config)
+                for email_data in emails:
+                    try:
+                        attachments = email_data.get("attachments", [])
+                        display_name = email_data.get("display_name")
+                        html_body = email_data.get("html_body")
+                        inline_images = email_data.get("inline_images")
+                        output_path = local_client.save_email_as_eml(
+                            to_addresses=email_data["recipients"],
+                            subject=email_data["subject"],
+                            body=email_data["body"],
+                            attachments=attachments if attachments else None,
+                            display_name=display_name,
+                            html_body=html_body,
+                            inline_images=inline_images,
+                            output_dir=eml_output_dir,
+                        )
+                        saved_files.append(str(output_path))
+                        sent_count += 1
+                        add_history_entry({
+                            "type": email_type,
+                            "subject": email_data["subject"],
+                            "recipients": email_data["recipients"],
+                            "timestamp": self._get_timestamp(),
+                            "status": "saved",
+                        })
+                        if cynic_vbs_md5_list is not None:
+                            vbs_md5 = email_data.get("vbs_md5")
+                            if vbs_md5:
+                                cynic_vbs_md5_list.append(vbs_md5)
+                    except Exception as e:
+                        failed_count += 1
+                        error_msg = f"Error saving {email_data.get('subject', 'email')} as EML: {str(e)}"
+                        errors.append(error_msg)
+                        logger.error(error_msg)
+            except Exception as e:
+                logger.error(f"Error saving {email_type} emails as EML: {e}")
+                return {
+                    "success": False,
+                    "sent": sent_count,
+                    "failed": len(emails) - sent_count,
+                    "total": len(emails),
+                    "errors": [str(e)] + errors[:9],
+                    "connection_info": connection_info,
+                }
+
+            result = {
+                "success": failed_count == 0,
+                "sent": sent_count,
+                "failed": failed_count,
+                "total": len(emails),
+                "errors": errors[:10],
+                "connection_info": connection_info,
+                "saved_files": saved_files,
+                "eml_output_dir": eml_output_dir,
+            }
+            if cynic_vbs_md5_list:
+                result["cynic_vbs_md5"] = cynic_vbs_md5_list
+            if result["success"]:
+                result["connection_details"] = (
+                    f"Saved {sent_count} email(s) as .eml files for type: {email_type}\n"
+                    f"Output directory: {eml_output_dir}"
+                )
+            return result
+
         try:
             smtp_client = SMTPClient(smtp_config)
             with smtp_client as smtp:

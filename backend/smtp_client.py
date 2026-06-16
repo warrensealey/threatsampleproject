@@ -8,6 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
 from email.mime.image import MIMEImage
 from email import encoders
+from datetime import datetime
 from pathlib import Path
 import logging
 from backend.config import get_smtp_config
@@ -117,99 +118,17 @@ class SMTPClient:
                 return False
         
         try:
-            # Convert single address to list
-            if isinstance(to_addresses, str):
-                to_addresses = [to_addresses]
-            
-            # Decide base message structure
-            has_html = html_body is not None
-            has_inline = bool(inline_images)
-            has_attachments = bool(attachments)
+            msg, to_addresses = self.build_message(
+                to_addresses=to_addresses,
+                subject=subject,
+                body=body,
+                attachments=attachments,
+                from_address=from_address,
+                display_name=display_name,
+                html_body=html_body,
+                inline_images=inline_images,
+            )
 
-            # msg is always the top-level message we send
-            # body_container is where inline resources should attach
-            if has_html or has_inline:
-                if has_attachments:
-                    # Top-level multipart/mixed for attachments, with nested
-                    # multipart/related that contains text/HTML and inline images.
-                    msg = MIMEMultipart("mixed")
-                    related = MIMEMultipart("related")
-                    alternative = MIMEMultipart("alternative")
-                    alternative.attach(MIMEText(body, "plain"))
-                    if has_html:
-                        alternative.attach(MIMEText(html_body, "html"))
-                    related.attach(alternative)
-                    msg.attach(related)
-                    body_container = related
-                else:
-                    # No attachments; multipart/related with multipart/alternative
-                    msg = MIMEMultipart("related")
-                    alternative = MIMEMultipart("alternative")
-                    alternative.attach(MIMEText(body, "plain"))
-                    if has_html:
-                        alternative.attach(MIMEText(html_body, "html"))
-                    msg.attach(alternative)
-                    body_container = msg
-            else:
-                if has_attachments:
-                    # Plain-text body with attachments: multipart/mixed
-                    msg = MIMEMultipart("mixed")
-                    msg.attach(MIMEText(body, "plain"))
-                else:
-                    # Plain-text only, no attachments
-                    msg = MIMEText(body, "plain")
-                body_container = msg
-            
-            # Set from address with optional display name
-            if from_address:
-                email_address = from_address
-            elif self.smtp_config.get("username"):
-                email_address = self.smtp_config.get("username")
-            else:
-                email_address = None
-            
-            if email_address:
-                if display_name:
-                    # Format: "Display Name <email@example.com>"
-                    msg['From'] = f'"{display_name}" <{email_address}>'
-                else:
-                    msg['From'] = email_address
-            
-            msg['To'] = ", ".join(to_addresses)
-            msg['Subject'] = subject
-            
-            # Add inline images if provided (expects list of dicts with keys: cid, data, subtype)
-            if has_inline:
-                for img in inline_images or []:
-                    try:
-                        cid = img.get("cid")
-                        data = img.get("data")
-                        subtype = img.get("subtype", "png")
-                        if not cid or data is None:
-                            continue
-                        image_part = MIMEImage(data, _subtype=subtype)
-                        image_part.add_header("Content-ID", f"<{cid}>")
-                        image_part.add_header("Content-Disposition", "inline", filename=f"{cid}.{subtype}")
-                        body_container.attach(image_part)
-                    except Exception as e:
-                        logger.error(f"Failed to attach inline image {img!r}: {e}")
-            
-            # Add attachments
-            if attachments:
-                for attachment_path in attachments:
-                    if isinstance(attachment_path, (str, Path)):
-                        attachment_path = Path(attachment_path)
-                        if attachment_path.exists():
-                            with open(attachment_path, 'rb') as f:
-                                part = MIMEBase('application', 'octet-stream')
-                                part.set_payload(f.read())
-                                encoders.encode_base64(part)
-                                part.add_header(
-                                    'Content-Disposition',
-                                    f'attachment; filename= {attachment_path.name}'
-                                )
-                                msg.attach(part)
-            
             # Send email
             text = msg.as_string()
             self.server.sendmail(msg['From'], to_addresses, text)
@@ -219,6 +138,153 @@ class SMTPClient:
         except Exception as e:
             logger.error(f"Failed to send email: {e}")
             return False
+
+    def build_message(
+        self,
+        to_addresses,
+        subject,
+        body,
+        attachments=None,
+        from_address=None,
+        display_name=None,
+        html_body=None,
+        inline_images=None,
+    ):
+        """Build and return an email MIME message plus normalized recipients list."""
+        # Convert single address to list
+        if isinstance(to_addresses, str):
+            to_addresses = [to_addresses]
+
+        # Decide base message structure
+        has_html = html_body is not None
+        has_inline = bool(inline_images)
+        has_attachments = bool(attachments)
+
+        # msg is always the top-level message we send/save
+        # body_container is where inline resources should attach
+        if has_html or has_inline:
+            if has_attachments:
+                # Top-level multipart/mixed for attachments, with nested
+                # multipart/related that contains text/HTML and inline images.
+                msg = MIMEMultipart("mixed")
+                related = MIMEMultipart("related")
+                alternative = MIMEMultipart("alternative")
+                alternative.attach(MIMEText(body, "plain"))
+                if has_html:
+                    alternative.attach(MIMEText(html_body, "html"))
+                related.attach(alternative)
+                msg.attach(related)
+                body_container = related
+            else:
+                # No attachments; multipart/related with multipart/alternative
+                msg = MIMEMultipart("related")
+                alternative = MIMEMultipart("alternative")
+                alternative.attach(MIMEText(body, "plain"))
+                if has_html:
+                    alternative.attach(MIMEText(html_body, "html"))
+                msg.attach(alternative)
+                body_container = msg
+        else:
+            if has_attachments:
+                # Plain-text body with attachments: multipart/mixed
+                msg = MIMEMultipart("mixed")
+                msg.attach(MIMEText(body, "plain"))
+            else:
+                # Plain-text only, no attachments
+                msg = MIMEText(body, "plain")
+            body_container = msg
+
+        # Set from address with optional display name
+        if from_address:
+            email_address = from_address
+        elif self.smtp_config.get("username"):
+            email_address = self.smtp_config.get("username")
+        else:
+            email_address = "no-reply@local.test"
+
+        if display_name:
+            # Format: "Display Name <email@example.com>"
+            msg['From'] = f'"{display_name}" <{email_address}>'
+        else:
+            msg['From'] = email_address
+
+        msg['To'] = ", ".join(to_addresses)
+        msg['Subject'] = subject
+
+        # Add inline images if provided (expects list of dicts with keys: cid, data, subtype)
+        if has_inline:
+            for img in inline_images or []:
+                try:
+                    cid = img.get("cid")
+                    data = img.get("data")
+                    subtype = img.get("subtype", "png")
+                    if not cid or data is None:
+                        continue
+                    image_part = MIMEImage(data, _subtype=subtype)
+                    image_part.add_header("Content-ID", f"<{cid}>")
+                    image_part.add_header("Content-Disposition", "inline", filename=f"{cid}.{subtype}")
+                    body_container.attach(image_part)
+                except Exception as e:
+                    logger.error(f"Failed to attach inline image {img!r}: {e}")
+
+        # Add attachments
+        if attachments:
+            for attachment_path in attachments:
+                if isinstance(attachment_path, (str, Path)):
+                    attachment_path = Path(attachment_path)
+                    if attachment_path.exists():
+                        with open(attachment_path, 'rb') as f:
+                            part = MIMEBase('application', 'octet-stream')
+                            part.set_payload(f.read())
+                            encoders.encode_base64(part)
+                            part.add_header(
+                                'Content-Disposition',
+                                f'attachment; filename= {attachment_path.name}'
+                            )
+                            msg.attach(part)
+
+        return msg, to_addresses
+
+    def save_email_as_eml(
+        self,
+        to_addresses,
+        subject,
+        body,
+        attachments=None,
+        from_address=None,
+        display_name=None,
+        html_body=None,
+        inline_images=None,
+        output_dir=None,
+    ):
+        """Save an email as a local .eml file and return its path."""
+        msg, _ = self.build_message(
+            to_addresses=to_addresses,
+            subject=subject,
+            body=body,
+            attachments=attachments,
+            from_address=from_address,
+            display_name=display_name,
+            html_body=html_body,
+            inline_images=inline_images,
+        )
+
+        if output_dir is None:
+            output_dir = Path(__file__).resolve().parent.parent / "data" / "eml_exports"
+        else:
+            output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        safe_subject = "".join(c if c.isalnum() or c in ("-", "_") else "_" for c in (subject or "email"))
+        safe_subject = safe_subject[:60] or "email"
+        output_path = output_dir / f"{timestamp}_{safe_subject}.eml"
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            f.write(msg.as_string())
+
+        logger.info(f"Saved EML file: {output_path}")
+        return output_path
     
     def __enter__(self):
         """Context manager entry."""

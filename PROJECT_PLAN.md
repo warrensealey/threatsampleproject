@@ -1,6 +1,6 @@
 # Email Data Generation Project - Complete Plan
 
-**Version:** 1.5.0
+**Version:** 1.6.0
 **Repository:** `/Users/warrensealey/threatsampleproject/`
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
@@ -20,11 +20,13 @@ threatsampleproject/
 │   │   ├── eicar.py        # EICAR test generator
 │   │   ├── cynic.py        # Cynic test generator
 │   │   ├── gtube.py        # GTUBE spam-test generator
+│   │   ├── nrd.py          # Newly registered domain (NRD) generator
 │   │   └── custom.py       # Custom email generator
 │   ├── app.py              # Flask main application
 │   ├── config.py           # Configuration management
 │   ├── email_generator.py  # Email generation coordinator
 │   ├── smtp_client.py      # SMTP client
+│   ├── nrd_cache.py        # NRD CSV cache + cursor management
 │   └── email_client.py     # IMAP client (for reading emails)
 ├── frontend/               # Web frontend
 │   ├── index.html          # Main dashboard
@@ -39,10 +41,14 @@ threatsampleproject/
 ├── .github/
 │   └── workflows/
 │       └── docker.yml      # GitHub Actions Docker build
+│       └── test.yml        # GitHub Actions pytest workflow
 ├── Dockerfile              # Docker container definition
 ├── docker-compose.yml      # Docker Compose configuration
 ├── .dockerignore           # Docker ignore patterns
 ├── requirements.txt        # Python dependencies
+├── requirements-dev.txt   # Dev/test dependencies (pytest)
+├── pytest.ini             # Pytest configuration
+├── tests/                 # Automated tests
 ├── VERSION                 # Version information
 ├── start.sh                # Startup script
 ├── README.md               # Project overview
@@ -51,7 +57,7 @@ threatsampleproject/
 └── PROJECT_PLAN.md         # This file
 ```
 
-## Current Features (Version 1.5.0)
+## Current Features (Version 1.6.0)
 
 ### Email Types
 
@@ -60,6 +66,7 @@ threatsampleproject/
 - **Cynic Test Emails**: Password-protected VBS archives
 - **GTUBE Spam-Test Emails**: Single-message spam detector tests using canonical GTUBE string
 - **QR Phishing Emails**: Phishing emails where PhishTank URLs are encoded as QR codes in the email body and/or a PDF attachment
+- **Newly Registered Domain Emails**: Test emails with URLs from the weekly newly registered domain list (one domain per email), using a cached CSV downloaded at most once per 24 hours with a sequential cursor
 - **Custom Emails**: Fully configurable emails with custom subject, body, display name, optional attachments (.zip, .com, .scr, .pdf, .bat), and optional HTML test links (threat risk levels, category URLs, or user-defined URLs)
 
 ### Email Providers
@@ -83,6 +90,7 @@ threatsampleproject/
 ### User Interface
 
 - Dashboard with email sending options
+- Delivery mode dropdown applies to all send actions (SMTP vs save as local `.eml` files)
 - Custom email modal with support for saving and applying **custom templates**.
 - Configuration page with provider selection and automatic IMAP/SMTP preset filling when a provider is chosen.
 - Detailed connection information display
@@ -290,7 +298,13 @@ docker-compose up
 
 ## Version History
 
-### Version 1.5.0 (Current)
+### Version 1.6.0 (Current)
+
+- **Newly Registered Domain (NRD) Emails**: One email per domain from the weekly NRD CSV list, cached locally with a 24-hour refresh window and a persistent sequential cursor (no reuse until the list refreshes). Email subjects include the domain under test.
+- **EML Delivery Mode**: Dashboard **Delivery mode** supports saving outbound messages as local `.eml` files (under `data/eml_exports/`) instead of sending via SMTP.
+- **Automated tests**: Pytest suite covering NRD cache/cursor, NRD generator, and API validation, plus a CI workflow to run tests.
+
+### Version 1.5.0
 
 - **Custom Email test URLs**: Threat risk level dropdown (1–10), category test URL dropdown, and custom URL + display text fields with automatic `https://` prefixing.
 - **HTML multipart emails**: Custom bodies with HTML links include a plain-text alternative for mail clients.

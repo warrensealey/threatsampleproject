@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Version 1.5.0**
+**Version 1.6.0**
 
 Comprehensive documentation for the Email Data Generation application.
 
@@ -26,6 +26,7 @@ The Email Data Generation application is a full-stack web application designed f
 - **Cynic Test Emails**: Password-protected VBS archives
 - **GTUBE Spam-Test Emails**: Single-message spam detector tests that embed the canonical GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X` ([spec](https://en.wikipedia.org/wiki/GTUBE))
 - **QR Phishing Emails**: Phishing emails where PhishTank URLs are encoded as QR codes embedded in the email body and/or placed into a PDF attachment
+- **Newly Registered Domain Emails**: Test emails with URLs from the weekly newly registered domain list
 - **Custom Emails**: Fully configurable emails with custom subject, body, display name, and optional attachments
 
 ### Key Features
@@ -339,6 +340,18 @@ QR phishing emails take real phishing URLs from PhishTank and encode them as QR 
   - Both inline and PDF in the same email
 - Plain-text body always included for compatibility, describing the presence and purpose of the QR phishing URL without showing the actual URL text in clear form
 - The underlying phishing URL is present only inside the QR code payload and is not printed in clear text in the HTML body or PDF attachment
+
+### Newly Registered Domain (NRD) Emails
+
+NRD emails use domains from the [shreshta-labs/newly-registered-domains](https://github.com/shreshta-labs/newly-registered-domains) weekly list (`nrd-1w.csv`). Each send produces one email per domain with a plain-text URL of the form `https://www.{domain}`.
+
+**Features**:
+- Source: `https://raw.githubusercontent.com/shreshta-labs/newly-registered-domains/main/nrd-1w.csv`
+- Local cache: `data/nrd-1w.csv` (re-downloaded at most once per 24 hours)
+- Cursor state in `config.json` (`nrd.last_download_utc`, `nrd.next_index`) — domains are consumed sequentially and not reused until the list is refreshed
+- Count: 1–10 emails per send
+- Subject format: `Newly Registered Domain Test - {domain}`
+- Supports SMTP delivery or saving as local `.eml` files under `data/eml_exports/` (dashboard **Delivery mode** dropdown)
 
 ### Custom Emails
 

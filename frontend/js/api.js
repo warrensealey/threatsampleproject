@@ -125,38 +125,60 @@ class APIClient {
   }
 
   // Email sending
-  async sendPhishing(count, recipients, templateType = 'warning') {
+  async sendPhishing(
+    count,
+    recipients,
+    templateType = 'warning',
+    deliveryMode = 'smtp'
+  ) {
     return this.request('/send/phishing', {
       method: 'POST',
-      body: { count, recipients, template_type: templateType },
+      body: {
+        count,
+        recipients,
+        template_type: templateType,
+        delivery_mode: deliveryMode,
+      },
     });
   }
 
-  async sendQrPhishing(count, recipients, qrMode = 'body') {
+  async sendQrPhishing(
+    count,
+    recipients,
+    qrMode = 'body',
+    deliveryMode = 'smtp'
+  ) {
     return this.request('/send/qr_phishing', {
       method: 'POST',
-      body: { count, recipients, qr_mode: qrMode },
+      body: { count, recipients, qr_mode: qrMode, delivery_mode: deliveryMode },
     });
   }
 
-  async sendEicar(count, recipients) {
+  async sendEicar(count, recipients, deliveryMode = 'smtp') {
     return this.request('/send/eicar', {
       method: 'POST',
-      body: { count, recipients },
+      body: { count, recipients, delivery_mode: deliveryMode },
     });
   }
 
-  async sendCynic(count, recipients) {
+  async sendCynic(count, recipients, deliveryMode = 'smtp') {
     return this.request('/send/cynic', {
       method: 'POST',
-      body: { count, recipients },
+      body: { count, recipients, delivery_mode: deliveryMode },
     });
   }
 
-  async sendGtube(count, recipients) {
+  async sendGtube(count, recipients, deliveryMode = 'smtp') {
     return this.request('/send/gtube', {
       method: 'POST',
-      body: { count, recipients },
+      body: { count, recipients, delivery_mode: deliveryMode },
+    });
+  }
+
+  async sendNrd(count, recipients, deliveryMode = 'smtp') {
+    return this.request('/send/nrd', {
+      method: 'POST',
+      body: { count, recipients, delivery_mode: deliveryMode },
     });
   }
 
@@ -168,7 +190,8 @@ class APIClient {
     displayName,
     attachmentType,
     qrUrl,
-    qrMode
+    qrMode,
+    deliveryMode = 'smtp'
   ) {
     const payload = {
       count,
@@ -184,6 +207,9 @@ class APIClient {
     }
     if (qrMode) {
       payload.qr_mode = qrMode;
+    }
+    if (deliveryMode) {
+      payload.delivery_mode = deliveryMode;
     }
 
     return this.request('/send/custom', {

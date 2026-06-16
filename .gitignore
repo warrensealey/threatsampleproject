@@ -39,6 +39,9 @@ data/config.json
 data/logs/
 data/.encryption_key
 data/.scheduler.lock
+data/eml_exports/
+data/nrd-1w.csv
+data/nrd-1w.csv.tmp
 *.7z
 *.vbs
 eicar.com
