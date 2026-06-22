@@ -1,6 +1,6 @@
 # Project Documentation
 
-**Version 1.6.1**
+**Version 1.7.0**
 
 Comprehensive documentation for the Email Data Generation application.
 
@@ -351,6 +351,8 @@ NRD emails use domains from the [shreshta-labs/newly-registered-domains](https:/
 - Cursor state in `config.json` (`nrd.last_download_utc`, `nrd.next_index`) — domains are consumed sequentially and not reused until the list is refreshed
 - Count: 1–10 emails per send
 - Subject format: `Newly Registered Domain Test - {domain}`
+- Each email body includes: `List of domains downloaded on {local date/time}` (app timezone)
+- Dashboard and NRD send modal show when the current cached list was downloaded
 - Supports SMTP delivery or saving as local `.eml` files under `data/eml_exports/` (dashboard **Delivery mode** dropdown)
 
 ### Custom Emails

@@ -10,7 +10,9 @@ from typing import List, Optional
 
 import requests
 
-from backend.config import load_config, save_config
+from zoneinfo import ZoneInfo
+
+from backend.config import get_timezone, load_config, save_config
 
 logger = logging.getLogger(__name__)
 
@@ -187,3 +189,41 @@ def remaining_domain_count(csv_path: Optional[Path] = None) -> int:
     domains = ensure_nrd_list(csv_path)
     state = get_nrd_state()
     return max(0, len(domains) - state["next_index"])
+
+
+def format_nrd_download_datetime() -> Optional[str]:
+    """Format last NRD download time in the app timezone (long local format)."""
+    state = get_nrd_state()
+    downloaded_at = _parse_utc_timestamp(state.get("last_download_utc") or "")
+    if downloaded_at is None:
+        return None
+    try:
+        local_tz = ZoneInfo(get_timezone())
+    except Exception:
+        local_tz = timezone.utc
+    local_dt = downloaded_at.astimezone(local_tz)
+    return f"{local_dt.day} {local_dt.strftime('%B %Y, %H:%M')}"
+
+
+def format_nrd_download_line(download_display: Optional[str] = None) -> str:
+    """Return the download indicator sentence for email bodies and UI."""
+    display = download_display if download_display is not None else format_nrd_download_datetime()
+    if display:
+        return f"List of domains downloaded on {display}"
+    return "List of domains downloaded on unknown date"
+
+
+def get_nrd_status(csv_path: Optional[Path] = None) -> dict:
+    """Return NRD cache status for API and dashboard display."""
+    state = get_nrd_state()
+    cached_domains = load_cached_domains(csv_path)
+    total_cached = len(cached_domains)
+    next_index = state["next_index"]
+    return {
+        "last_download_utc": state.get("last_download_utc"),
+        "last_download_display": format_nrd_download_datetime(),
+        "next_index": next_index,
+        "remaining": max(0, total_cached - next_index),
+        "total_cached": total_cached,
+        "list_available": total_cached > 0,
+    }

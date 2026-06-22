@@ -9,6 +9,15 @@ from backend.email_generator import EmailGenerator
 from backend.nrd_cache import InsufficientDomainsError, NRDDownloadError
 
 
+def test_get_nrd_status_route(flask_client, sample_nrd_csv):
+    response = flask_client.get("/api/nrd/status")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["list_available"] is True
+    assert data["total_cached"] == 11
+    assert data["last_download_display"] is not None
+
+
 def test_send_nrd_happy_path(flask_client, monkeypatch):
     def mock_send(count, recipients, delivery_mode="smtp"):
         return {
@@ -158,6 +167,7 @@ def test_send_nrd_eml_delivery(tmp_data_dir, sample_nrd_csv, monkeypatch):
     )
     assert result["success"] is True
     assert result["sent"] == 2
+    assert result.get("nrd_download_display")
     assert len(saved_paths) == 2
 
     from email import message_from_bytes

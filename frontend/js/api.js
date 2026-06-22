@@ -175,6 +175,10 @@ class APIClient {
     });
   }
 
+  async getNrdStatus() {
+    return this.request('/nrd/status');
+  }
+
   async sendNrd(count, recipients, deliveryMode = 'smtp') {
     return this.request('/send/nrd', {
       method: 'POST',

@@ -1,6 +1,6 @@
 # Email Data Generation Project
 
-**Version 1.6.1**
+**Version 1.7.0**
 
 Full-stack Python web application for generating and sending test emails (phishing, EICAR malware, Cynic test emails, GTUBE spam-test messages, and custom emails) through SMTP, with a web-based configuration interface supporting multiple email providers.
 
@@ -102,7 +102,7 @@ Or see [INSTALLATION.md](INSTALLATION.md) for detailed installation instructions
    - **Cynic Test Emails**: Password-protected VBS archives
    - **GTUBE Spam Test**: Single-message spam detector test using the GTUBE string `XJS*C4JDBQADN1.NSBN3*2IDNEN*GTUBE-STANDARD-ANTI-UBE-TEST-EMAIL*C.34X`
    - **Custom Email**: Fully configurable emails with custom subject, body, display name, and optional attachments (.zip, .com, .scr, .pdf, .bat), plus optional QR encoding of a user-specified URL into the email body and/or a PDF attachment (URL only present inside the QR code). The Custom Email dialog can insert HTML links for Symantec WebFilter **threat risk levels (1–10)**, predefined **category test URLs**, or a **custom URL** with user-defined display text.
-   - **Newly Registered Domain (NRD) Emails**: One email per domain from the weekly [newly registered domains](https://github.com/shreshta-labs/newly-registered-domains) list; each body contains `https://www.{domain}`. The list is downloaded at most once per 24 hours and cached locally; domains are consumed sequentially without reuse until the list is refreshed.
+   - **Newly Registered Domain (NRD) Emails**: One email per domain from the weekly [newly registered domains](https://github.com/shreshta-labs/newly-registered-domains) list; each body contains `https://www.{domain}` and shows when the domain list was downloaded. The list is downloaded at most once per 24 hours and cached locally; domains are consumed sequentially without reuse until the list is refreshed.
 3. Choose **Delivery mode** (SMTP or save as local `.eml` files) — applies to all send types on the dashboard.
 4. Enter recipient addresses and count (for NRD, count is 1–10; for custom emails, fill in the form fields)
 5. Review connection details in the results modal
@@ -157,7 +157,13 @@ pytest tests/ -v
 
 ## Version
 
-Current version: **1.6.1**
+Current version: **1.7.0**
+
+### What's new in 1.7.0
+
+- **NRD download date indicator**: Dashboard and NRD send modal show when the cached domain list was last downloaded (app timezone, long format).
+- **NRD email bodies**: Each NRD email includes `List of domains downloaded on {date}` so recipients can see which list batch was used.
+- **NRD status API**: `GET /api/nrd/status` returns download timestamp, cursor position, and remaining domains.
 
 ### What's new in 1.6.1
 

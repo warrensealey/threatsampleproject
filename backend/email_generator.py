@@ -16,6 +16,7 @@ from backend.nrd_cache import (
     InsufficientDomainsError,
     NRDDownloadError,
     advance_nrd_cursor,
+    format_nrd_download_datetime,
     get_nrd_state,
     remaining_domain_count,
 )
@@ -163,6 +164,7 @@ class EmailGenerator:
                 state = get_nrd_state()
                 results["nrd_cursor"] = state["next_index"]
                 results["nrd_remaining"] = remaining_domain_count()
+                results["nrd_download_display"] = format_nrd_download_datetime()
             return results
         except InsufficientDomainsError as e:
             logger.error("Insufficient NRD domains: %s", e)

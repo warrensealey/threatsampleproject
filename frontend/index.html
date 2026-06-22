@@ -62,6 +62,7 @@
                 <div>
                     <h3>Newly Registered Domain Emails</h3>
                     <p>Send test emails with URLs from the weekly newly registered domain list (one domain per email).</p>
+                    <p id="nrdListStatus" style="color: #666; font-size: 0.95em; margin-bottom: 12px;">Loading list download info...</p>
                     <button class="btn btn-primary" id="sendNrdBtn">Send NRD Emails</button>
                 </div>
             </div>
@@ -297,6 +298,7 @@
         <div class="modal-content" style="max-width: 500px;">
             <span class="modal-close" id="nrdModalClose">&times;</span>
             <h2>Send NRD Emails</h2>
+            <p id="nrdModalListStatus" style="color: #666; font-size: 0.95em; margin-bottom: 16px;">Loading list download info...</p>
             <form id="nrdForm">
                 <div class="form-group">
                     <label for="nrdCountInput">Count (1–10):</label>

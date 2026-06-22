@@ -1,6 +1,6 @@
 # Email Data Generation Project - Complete Plan
 
-**Version:** 1.6.0
+**Version:** 1.7.0
 **Repository:** `/Users/warrensealey/threatsampleproject/`
 **GitHub:** https://github.com/warrensealey/threatsampleproject
 
@@ -57,7 +57,7 @@ threatsampleproject/
 └── PROJECT_PLAN.md         # This file
 ```
 
-## Current Features (Version 1.6.1)
+## Current Features (Version 1.7.0)
 
 ### Email Types
 
@@ -298,7 +298,18 @@ docker-compose up
 
 ## Version History
 
-### Version 1.6.1 (Current)
+### Version 1.7.0 (Current)
+
+- **NRD download date indicator**: Dashboard card and NRD send modal display when the cached domain list was last downloaded (formatted in the app timezone).
+- **NRD email bodies**: Each generated NRD email includes `List of domains downloaded on {local date/time}`.
+- **NRD status API**: `GET /api/nrd/status` exposes download metadata, cursor index, and remaining domain count.
+
+### Version 1.6.1
+
+- **Multi-platform Linux Docker builds**: GHCR images publish `linux/amd64` and `linux/arm64` manifests for cross-platform Docker pulls.
+- **Windows Docker guidance**: Documented Linux-container usage via Docker Desktop/WSL2.
+
+### Version 1.6.0
 
 - **Newly Registered Domain (NRD) Emails**: One email per domain from the weekly NRD CSV list, cached locally with a 24-hour refresh window and a persistent sequential cursor (no reuse until the list refreshes). Email subjects include the domain under test.
 - **EML Delivery Mode**: Dashboard **Delivery mode** supports saving outbound messages as local `.eml` files (under `data/eml_exports/`) instead of sending via SMTP.

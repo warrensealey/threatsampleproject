@@ -403,6 +403,18 @@ def send_gtube():
         return jsonify({"error": str(e)}), 500
 
 
+@api.route("/nrd/status", methods=["GET"])
+def get_nrd_status_route():
+    """Return NRD cache status including last download time."""
+    try:
+        from backend.nrd_cache import get_nrd_status
+
+        return jsonify(get_nrd_status())
+    except Exception as e:
+        logger.error(f"Error getting NRD status: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
 @api.route("/send/nrd", methods=["POST"])
 def send_nrd():
     """Send newly registered domain (NRD) test emails."""

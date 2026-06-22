@@ -16,6 +16,7 @@ def test_generate_single_email(sample_nrd_csv):
     assert email["url"] == "https://www.domain1.test"
     assert email["subject"] == "Newly Registered Domain Test - domain1.test"
     assert "https://www.domain1.test" in email["body"]
+    assert "List of domains downloaded on" in email["body"]
     assert email["recipients"] == ["a@example.com"]
 
 

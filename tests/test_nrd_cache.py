@@ -15,7 +15,10 @@ from backend.nrd_cache import (
     cache_is_expired,
     download_nrd_list,
     ensure_nrd_list,
+    format_nrd_download_datetime,
+    format_nrd_download_line,
     get_nrd_state,
+    get_nrd_status,
     parse_domains_from_text,
     peek_next_domains,
     save_nrd_state,
@@ -148,3 +151,22 @@ def test_peek_invalid_count(sample_nrd_csv):
         peek_next_domains(0, sample_nrd_csv["csv_file"])
     with pytest.raises(ValueError):
         peek_next_domains(11, sample_nrd_csv["csv_file"])
+
+
+def test_format_nrd_download_datetime(sample_nrd_csv, monkeypatch):
+    monkeypatch.setattr("backend.nrd_cache.get_timezone", lambda: "Europe/London")
+    save_nrd_state(last_download_utc="2026-06-16T12:00:00+00:00")
+    assert format_nrd_download_datetime() == "16 June 2026, 13:00"
+    assert (
+        format_nrd_download_line()
+        == "List of domains downloaded on 16 June 2026, 13:00"
+    )
+
+
+def test_get_nrd_status(sample_nrd_csv):
+    status = get_nrd_status(sample_nrd_csv["csv_file"])
+    assert status["list_available"] is True
+    assert status["total_cached"] == 11
+    assert status["remaining"] == 11
+    assert status["next_index"] == 0
+    assert status["last_download_display"] is not None

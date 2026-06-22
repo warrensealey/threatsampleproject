@@ -22,6 +22,7 @@ async function initDashboard() {
   await loadHistory();
   await loadDefaultRecipients();
   await loadCustomTemplates();
+  await loadNrdStatus();
   setupSendButtons();
   setupEmailSendModal();
   await loadSchedules();
@@ -460,6 +461,36 @@ Method: ${attempt.connection_method || 'N/A'}`;
   }
 }
 
+function renderNrdStatusText(status) {
+  if (status?.last_download_display) {
+    return `List of domains downloaded on ${status.last_download_display}`;
+  }
+  return 'No domain list downloaded yet';
+}
+
+function updateNrdStatusElements(text) {
+  const cardStatus = document.getElementById('nrdListStatus');
+  const modalStatus = document.getElementById('nrdModalListStatus');
+  if (cardStatus) {
+    cardStatus.textContent = text;
+  }
+  if (modalStatus) {
+    modalStatus.textContent = text;
+  }
+}
+
+async function loadNrdStatus() {
+  try {
+    const status = await api.getNrdStatus();
+    updateNrdStatusElements(renderNrdStatusText(status));
+    return status;
+  } catch (error) {
+    console.error('Failed to load NRD status:', error);
+    updateNrdStatusElements('Unable to load list download info');
+    return null;
+  }
+}
+
 function showNrdDialog() {
   const modal = document.getElementById('nrdModal');
   const countInput = document.getElementById('nrdCountInput');
@@ -476,6 +507,7 @@ function showNrdDialog() {
     recipientsInput.value = '';
   }
 
+  loadNrdStatus();
   modal.classList.remove('hidden');
 }
 
@@ -548,6 +580,9 @@ async function sendNrdEmails(count, recipients) {
     let detailsText = '';
     if (result.urls && result.urls.length > 0) {
       detailsText = `Domains used:\n${(result.domains || []).join('\n')}\n\nURLs:\n${result.urls.join('\n')}`;
+      if (result.nrd_download_display) {
+        detailsText += `\n\nList of domains downloaded on ${result.nrd_download_display}`;
+      }
       if (typeof result.nrd_remaining === 'number') {
         detailsText += `\n\nRemaining in cache: ${result.nrd_remaining}`;
       }
@@ -573,6 +608,7 @@ async function sendNrdEmails(count, recipients) {
 
       modalActions.classList.remove('hidden');
       await loadHistory();
+      await loadNrdStatus();
     } else {
       const errorMsg = result.error || 'Failed to send NRD emails';
       statusDiv.innerHTML = `<div class="alert alert-error">${errorMsg}</div>`;
